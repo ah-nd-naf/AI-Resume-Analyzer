@@ -3,11 +3,18 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 from typing import List
 from prisma import Prisma
+from google import genai
+from google.genai import types
 import pdfplumber
+import json
 import io
 
 # Initialize the Prisma client
 db = Prisma()
+
+# Initialize the modern Google Gen AI client
+# (It automatically detects GEMINI_API_KEY from your .env file)
+ai_client = genai.Client()
 
 # Define Pydantic models for structured AI analysis response
 class CritiqueItem(BaseModel):
@@ -21,14 +28,13 @@ class ResumeAnalysis(BaseModel):
     critiques: List[CritiqueItem] = Field(description="A list of specific, detailed improvement items.")
 
 
-# This handles connecting to the database when the server starts and disconnecting on shutdown
+# Handles connecting to the database when the server starts and disconnecting on shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.connect()
     yield
     await db.disconnect()
 
-# Add the lifespan context manager to our FastAPI app
 app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
 
 @app.get("/")
@@ -43,6 +49,7 @@ async def upload_resume(file: UploadFile = File(...)):
     try:
         content = await file.read()
         
+        # 1. Extract text from PDF
         extracted_text = ""
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             for page in pdf.pages:
@@ -51,8 +58,13 @@ async def upload_resume(file: UploadFile = File(...)):
                     extracted_text += text + "\n"
         
         cleaned_text = extracted_text.strip()
+        if not cleaned_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract text from the PDF. Please ensure the PDF is not a scanned image or empty."
+            )
         
-        # Save the extracted data to NeonDB using Prisma
+        # 2. Save the extracted raw text to NeonDB using Prisma
         resume_record = await db.resume.create(
             data={
                 "filename": file.filename,
@@ -60,10 +72,36 @@ async def upload_resume(file: UploadFile = File(...)):
             }
         )
         
+        # 3. Call Gemini to perform a structured ATS audit
+        prompt = f"""
+        Analyze the following extracted resume text thoroughly. Rate it out of 100 on ATS compatibility, 
+        provide a professional summary of the assessment, and list distinct, explicit formatting or content critiques 
+        along side high-impact actionable solutions.
+        
+        Resume text:
+        {cleaned_text}
+        """
+        
+        # Using the current SDK methods and recommended model
+        ai_response = ai_client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction="You are an expert ATS (Applicant Tracking System) optimization manager and professional resume writer.",
+                response_mime_type="application/json",
+                response_schema=ResumeAnalysis,
+            ),
+        )
+        
+        # Access the parsed Pydantic object directly
+        structured_analysis = ai_response.parsed
+        
+        # 4. Return the database payload + validated AI analysis data
         return {
-            "message": "Resume successfully processed and saved to database!",
+            "message": "Resume successfully processed, saved, and analyzed!",
             "resume_id": resume_record.id,
-            "filename": resume_record.filename
+            "filename": resume_record.filename,
+            "analysis": structured_analysis
         }
         
     except Exception as e:
