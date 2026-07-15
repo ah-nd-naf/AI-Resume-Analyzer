@@ -1,7 +1,21 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from contextlib import asynccontextmanager
+from prisma import Prisma
 import pdfplumber
 import io
-app = FastAPI(title="AI Resume Analyzer API")
+
+# Initialize the Prisma client
+db = Prisma()
+
+# This handles connecting to the database when the server starts
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db.connect()
+    yield
+    await db.disconnect()
+
+# Add the lifespan to our FastAPI app
+app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
 
 @app.get("/")
 async def root():
@@ -9,15 +23,12 @@ async def root():
 
 @app.post("/api/resumes/upload")
 async def upload_resume(file: UploadFile = File(...)):
-    # 1. Validate the file type
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are supported for now.")
     
     try:
-        # 2. Read the file content into memory asynchronously
         content = await file.read()
         
-        # 3. Extract text using pdfplumber
         extracted_text = ""
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             for page in pdf.pages:
@@ -25,10 +36,20 @@ async def upload_resume(file: UploadFile = File(...)):
                 if text:
                     extracted_text += text + "\n"
         
-        # 4. Return the results
+        cleaned_text = extracted_text.strip()
+        
+        # NEW: Save the extracted data to NeonDB using Prisma
+        resume_record = await db.resume.create(
+            data={
+                "filename": file.filename,
+                "content": cleaned_text
+            }
+        )
+        
         return {
-            "filename": file.filename,
-            "text": extracted_text.strip()
+            "message": "Resume successfully processed and saved to database!",
+            "resume_id": resume_record.id,
+            "filename": resume_record.filename
         }
         
     except Exception as e:
