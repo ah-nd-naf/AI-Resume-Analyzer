@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from contextlib import asynccontextmanager
+from pydantic import BaseModel, Field
+from typing import List
 from prisma import Prisma
 import pdfplumber
 import io
@@ -7,14 +9,26 @@ import io
 # Initialize the Prisma client
 db = Prisma()
 
-# This handles connecting to the database when the server starts
+# Define Pydantic models for structured AI analysis response
+class CritiqueItem(BaseModel):
+    category: str = Field(description="The category of the issue (e.g., Formatting, Impact, Keywords, Structure)")
+    issue: str = Field(description="A clear explanation of what is wrong or could be improved.")
+    solution: str = Field(description="An explicit, actionable suggestion or rewrite showing how to fix the issue.")
+
+class ResumeAnalysis(BaseModel):
+    ats_score: int = Field(description="An overall ATS compatibility and formatting score out of 100.")
+    summary: str = Field(description="A brief, professional 2-3 sentence overview of the resume's core strengths and primary areas for growth.")
+    critiques: List[CritiqueItem] = Field(description="A list of specific, detailed improvement items.")
+
+
+# This handles connecting to the database when the server starts and disconnecting on shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.connect()
     yield
     await db.disconnect()
 
-# Add the lifespan to our FastAPI app
+# Add the lifespan context manager to our FastAPI app
 app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
 
 @app.get("/")
@@ -38,7 +52,7 @@ async def upload_resume(file: UploadFile = File(...)):
         
         cleaned_text = extracted_text.strip()
         
-        # NEW: Save the extracted data to NeonDB using Prisma
+        # Save the extracted data to NeonDB using Prisma
         resume_record = await db.resume.create(
             data={
                 "filename": file.filename,
