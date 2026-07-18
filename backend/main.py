@@ -1,8 +1,7 @@
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 from prisma import Prisma
 from google import genai
 from google.genai import types
@@ -14,7 +13,6 @@ import io
 db = Prisma()
 
 # Initialize the modern Google Gen AI client
-# (It automatically detects GEMINI_API_KEY from your .env file)
 ai_client = genai.Client()
 
 # Define Pydantic models for structured AI analysis response
@@ -25,7 +23,10 @@ class CritiqueItem(BaseModel):
 
 class ResumeAnalysis(BaseModel):
     ats_score: int = Field(description="An overall ATS compatibility and formatting score out of 100.")
-    summary: str = Field(description="A brief, professional 2-3 sentence overview of the resume's core strengths and primary areas for growth.")
+    # NEW: Optional fields for Job Description matching
+    match_percentage: Optional[int] = Field(default=None, description="The match percentage against the provided job description. Null if no JD provided.")
+    gap_analysis: Optional[List[str]] = Field(default=None, description="A list of missing key skills or qualifications based on the job description. Null if no JD provided.")
+    summary: str = Field(description="A brief, professional overview of the resume's core strengths and primary areas for growth.")
     critiques: List[CritiqueItem] = Field(description="A list of specific, detailed improvement items.")
 
 
@@ -38,9 +39,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
 
+# Add CORS middleware to allow the frontend to communicate with the backend
+from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Your Next.js frontend URL
+    allow_origins=["http://localhost:3000"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,8 +53,12 @@ app.add_middleware(
 async def root():
     return {"message": "Backend is running successfully!"}
 
+# NEW: We added `job_description: Optional[str] = Form(None)` to accept the text from the frontend
 @app.post("/api/resumes/upload")
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(
+    file: UploadFile = File(...),
+    job_description: Optional[str] = Form(None)
+):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are supported for now.")
     
@@ -81,17 +88,32 @@ async def upload_resume(file: UploadFile = File(...)):
             }
         )
         
-        # 3. Call Gemini to perform a structured ATS audit
+        # 3. Build a dynamic prompt for Gemini
         prompt = f"""
         Analyze the following extracted resume text thoroughly. Rate it out of 100 on ATS compatibility, 
         provide a professional summary of the assessment, and list distinct, explicit formatting or content critiques 
         along side high-impact actionable solutions.
+        """
+        
+        # NEW: Conditionally ask Gemini for JD matching if the user provided one
+        if job_description:
+            prompt += f"""
+            
+            Additionally, compare the resume against the following Job Description. 
+            Calculate a strict match_percentage (0-100) representing how well the candidate fits the role.
+            Also, provide a gap_analysis as a list of 3-5 missing critical keywords, skills, or qualifications.
+            
+            Job Description:
+            {job_description}
+            """
+            
+        prompt += f"""
         
         Resume text:
         {cleaned_text}
         """
         
-        # Using the current SDK methods and recommended model
+        # Call Gemini using the modern SDK
         ai_response = ai_client.models.generate_content(
             model="gemini-3.5-flash",
             contents=prompt,
@@ -102,10 +124,9 @@ async def upload_resume(file: UploadFile = File(...)):
             ),
         )
         
-        # Access the parsed Pydantic object directly
         structured_analysis = ai_response.parsed
         
-        # 4. Return the database payload + validated AI analysis data
+        # 4. Return the complete payload
         return {
             "message": "Resume successfully processed, saved, and analyzed!",
             "resume_id": resume_record.id,
