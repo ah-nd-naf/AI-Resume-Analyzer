@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
@@ -36,6 +37,14 @@ async def lifespan(app: FastAPI):
     await db.disconnect()
 
 app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Your Next.js frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
