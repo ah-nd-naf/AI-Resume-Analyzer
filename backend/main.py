@@ -29,6 +29,15 @@ class ResumeAnalysis(BaseModel):
     summary: str = Field(description="A brief, professional overview of the resume's core strengths and primary areas for growth.")
     critiques: List[CritiqueItem] = Field(description="A list of specific, detailed improvement items.")
 
+class RewriteRequest(BaseModel):
+    original_text: str = Field(description="The weak text or issue from the resume.")
+    recommendation: str = Field(description="The AI's original recommendation on how to fix it.")
+
+class RewriteResponse(BaseModel):
+    rewritten_text: str = Field(description="A highly professional, impactful, and quantified rewritten bullet point.")
+    explanation: str = Field(description="A brief 1-sentence explanation of why this new version is much stronger.")
+
+
 
 # Handles connecting to the database when the server starts and disconnecting on shutdown
 @asynccontextmanager
@@ -135,6 +144,32 @@ async def upload_resume(
             "filename": resume_record.filename,
             "analysis": structured_analysis
         }
+
+
+@app.post("/api/resumes/rewrite")
+async def rewrite_bullet(request: RewriteRequest):
+    try:
+        prompt = f"""
+        You are an expert executive resume writer. 
+        A candidate has a weak section in their resume based on the following context.
+        
+        Current Weak State: {request.original_text}
+        Actionable Recommendation Given: {request.recommendation}
+        
+        Please provide a singular, highly professional, quantified, and impactful rewritten version of this text that the candidate can copy and paste directly into their resume.
+        """
+        
+        ai_response = ai_client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction="You are an expert resume writer. Output strictly in the requested JSON structure.",
+                response_mime_type="application/json",
+                response_schema=RewriteResponse,
+            ),
+        )
+        
+        return ai_response.parsed
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating rewrite: {str(e)}")
