@@ -8,6 +8,7 @@ from google.genai import types
 import pdfplumber
 import json
 import io
+import time  # NEW: Required for our auto-retry sleep mechanism
 
 # Initialize the Prisma client
 db = Prisma()
@@ -23,7 +24,6 @@ class CritiqueItem(BaseModel):
 
 class ResumeAnalysis(BaseModel):
     ats_score: int = Field(description="An overall ATS compatibility and formatting score out of 100.")
-    # NEW: Optional fields for Job Description matching
     match_percentage: Optional[int] = Field(default=None, description="The match percentage against the provided job description. Null if no JD provided.")
     gap_analysis: Optional[List[str]] = Field(default=None, description="A list of missing key skills or qualifications based on the job description. Null if no JD provided.")
     summary: str = Field(description="A brief, professional overview of the resume's core strengths and primary areas for growth.")
@@ -36,8 +36,6 @@ class RewriteRequest(BaseModel):
 class RewriteResponse(BaseModel):
     rewritten_text: str = Field(description="A highly professional, impactful, and quantified rewritten bullet point.")
     explanation: str = Field(description="A brief 1-sentence explanation of why this new version is much stronger.")
-
-
 
 # Handles connecting to the database when the server starts and disconnecting on shutdown
 @asynccontextmanager
@@ -62,7 +60,6 @@ app.add_middleware(
 async def root():
     return {"message": "Backend is running successfully!"}
 
-# NEW: We added `job_description: Optional[str] = Form(None)` to accept the text from the frontend
 @app.post("/api/resumes/upload")
 async def upload_resume(
     file: UploadFile = File(...),
@@ -106,7 +103,6 @@ async def upload_resume(
         along side high-impact actionable solutions.
         """
         
-        # NEW: Conditionally ask Gemini for JD matching if the user provided one
         if job_description:
             prompt += f"""
             
@@ -124,18 +120,33 @@ async def upload_resume(
         {cleaned_text}
         """
         
-        # Call Gemini using the modern SDK
-        ai_response = ai_client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="You are an expert ATS (Applicant Tracking System) optimization manager and professional resume writer.",
-                response_mime_type="application/json",
-                response_schema=ResumeAnalysis,
-            ),
-        )
+        # NEW: Call Gemini using the modern SDK with an Auto-Retry Loop
+        max_retries = 3
+        structured_analysis = None
         
-        structured_analysis = ai_response.parsed
+        for attempt in range(max_retries):
+            try:
+                ai_response = ai_client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction="You are an expert ATS (Applicant Tracking System) optimization manager and professional resume writer.",
+                        response_mime_type="application/json",
+                        response_schema=ResumeAnalysis,
+                    ),
+                )
+                
+                structured_analysis = ai_response.parsed
+                break # Success! Break out of the retry loop
+                
+            except Exception as api_error:
+                # Check if it is a 503 error and we haven't run out of retries
+                if "503" in str(api_error) and attempt < max_retries - 1:
+                    print(f"Google servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                    time.sleep(3)
+                else:
+                    # If it's a different error, or we are out of retries, throw the error
+                    raise api_error
         
         # 4. Return the complete payload
         return {
@@ -162,17 +173,28 @@ async def rewrite_bullet(request: RewriteRequest):
         Please provide a singular, highly professional, quantified, and impactful rewritten version of this text that the candidate can copy and paste directly into their resume.
         """
         
-        ai_response = ai_client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="You are an expert resume writer. Output strictly in the requested JSON structure.",
-                response_mime_type="application/json",
-                response_schema=RewriteResponse,
-            ),
-        )
-        
-        return ai_response.parsed
-        
+        # NEW: Auto-Retry Loop for the Rewrite Endpoint
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                ai_response = ai_client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction="You are an expert resume writer. Output strictly in the requested JSON structure.",
+                        response_mime_type="application/json",
+                        response_schema=RewriteResponse,
+                    ),
+                )
+                
+                return ai_response.parsed
+                
+            except Exception as api_error:
+                if "503" in str(api_error) and attempt < max_retries - 1:
+                    print(f"Google servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                    time.sleep(3)
+                else:
+                    raise api_error
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating rewrite: {str(e)}")
