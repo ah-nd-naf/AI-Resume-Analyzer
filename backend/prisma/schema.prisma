@@ -11,6 +11,8 @@ datasource db {
 model Resume {
   id        String   @id @default(uuid())
   filename  String
-  content   String?
+  content   String
+  userId    String?  //  This will store the Clerk User ID
   createdAt DateTime @default(now())
 }
+
