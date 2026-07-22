@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { SignInButton, Show, UserButton } from "@clerk/nextjs";
+import { SignInButton, Show, UserButton, useAuth } from "@clerk/nextjs";
 import { 
   UploadCloud, 
   FileText, 
@@ -30,6 +30,7 @@ type AnalysisResult = {
 };
 
 export default function Home() {
+  const { userId } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,6 +61,10 @@ export default function Home() {
     
     if (jobDescription.trim()) {
       formData.append("job_description", jobDescription.trim());
+    }
+
+    if (userId) {
+      formData.append("user_id", userId);
     }
 
     try {

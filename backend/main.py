@@ -57,7 +57,8 @@ async def root():
 @app.post("/api/resumes/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    job_description: Optional[str] = Form(None)
+    job_description: Optional[str] = Form(None),
+    user_id: Optional[str] = Form(None)
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are supported for now.")
@@ -84,7 +85,8 @@ async def upload_resume(
         resume_record = await db.resume.create(
             data={
                 "filename": file.filename,
-                "content": cleaned_text
+                "content": cleaned_text,
+                "userId": user_id
             }
         )
         
