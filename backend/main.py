@@ -144,6 +144,9 @@ async def upload_resume(
             "filename": resume_record.filename,
             "analysis": structured_analysis
         }
+    except Exception as e:
+        print(f"Error processing resume: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")
 
 
 @app.post("/api/resumes/rewrite")

@@ -29,6 +29,14 @@ type AnalysisResult = {
   critiques: Critique[];
 };
 
+// NEW: Type for our individual rewrite states
+type RewriteState = {
+  loading: boolean;
+  text?: string;
+  explanation?: string;
+  error?: string;
+};
+
 export default function Home() {
   const { userId } = useAuth();
   
@@ -37,12 +45,16 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // NEW: State dictionary to track rewrite progress per critique index
+  const [rewrites, setRewrites] = useState<Record<number, RewriteState>>({});
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
       setResults(null);
       setError(null);
+      setRewrites({}); // Reset rewrites on new file
     }
   }, []);
 
@@ -56,6 +68,7 @@ export default function Home() {
     if (!file) return;
     setIsAnalyzing(true);
     setError(null);
+    setRewrites({});
 
     const formData = new FormData();
     formData.append("file", file);
@@ -84,6 +97,38 @@ export default function Home() {
       setError(err.message);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // NEW: Function to call your new rewrite API
+  const handleRewrite = async (idx: number, issue: string, solution: string) => {
+    // Set loading state for this specific critique
+    setRewrites((prev) => ({ ...prev, [idx]: { loading: true } }));
+    
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/resumes/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          original_text: issue, 
+          recommendation: solution 
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate rewrite.");
+      
+      const data = await response.json();
+      
+      // Update state with the newly rewritten text
+      setRewrites((prev) => ({
+        ...prev,
+        [idx]: { loading: false, text: data.rewritten_text, explanation: data.explanation }
+      }));
+    } catch (err: any) {
+      setRewrites((prev) => ({
+        ...prev,
+        [idx]: { loading: false, error: err.message }
+      }));
     }
   };
 
@@ -152,10 +197,8 @@ export default function Home() {
         {/* True Glassmorphism Input Form Card */}
         <div className="bg-white/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 p-8 sm:p-12 space-y-10 relative overflow-hidden">
           
-          {/* Subtle interior glare */}
           <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
 
-          {/* Job Description Textarea */}
           <div className="space-y-3 relative z-10">
             <label htmlFor="jd" className="flex items-center text-sm font-bold tracking-wide text-slate-800 uppercase">
               Target Job Description <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-white/50 border border-white/60 text-slate-500 backdrop-blur-sm">Optional</span>
@@ -232,7 +275,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Error Message */}
           {error && (
             <div className="p-5 bg-rose-500/10 backdrop-blur-md rounded-2xl border border-rose-500/20 flex items-start space-x-3 animate-in fade-in relative z-10 shadow-inner">
               <AlertCircle className="h-5 w-5 text-rose-600 mt-0.5 flex-shrink-0" />
@@ -241,16 +283,13 @@ export default function Home() {
           )}
         </div>
 
-        {/* Glassmorphism Results Dashboard */}
         {results && (
           <div className="bg-white/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
             
             <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
 
-            {/* Top Section: Score & Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 border-b border-white/50 relative z-10">
               
-              {/* Score Circular Display */}
               <div className="p-10 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/50 bg-white/20 relative overflow-hidden">
                 <div className="relative flex items-center justify-center z-10">
                   <svg className="w-44 h-44 transform -rotate-90 drop-shadow-sm">
@@ -272,14 +311,12 @@ export default function Home() {
                 <h3 className="mt-6 text-xs font-black tracking-widest text-slate-500 uppercase drop-shadow-sm">Overall ATS Score</h3>
               </div>
 
-              {/* Summary & JD Match Text */}
               <div className="p-10 md:col-span-2 flex flex-col justify-center bg-white/10">
                 <h3 className="text-2xl font-extrabold text-slate-800 mb-4 drop-shadow-sm">Executive Summary</h3>
                 <p className="text-slate-700 leading-relaxed text-lg mb-8 font-medium">
                   {results.summary}
                 </p>
                 
-                {/* Conditionally render JD Match if provided */}
                 {results.match_percentage && (
                   <div className="bg-gradient-to-br from-indigo-500/10 to-violet-500/10 backdrop-blur-md rounded-2xl p-6 border border-white/60 relative overflow-hidden shadow-sm">
                     <div className="absolute -right-4 -top-4 text-indigo-500/10 mix-blend-multiply">
@@ -310,7 +347,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bottom Section: Critiques */}
             <div className="p-10 bg-white/10 relative z-10">
               <h3 className="text-2xl font-extrabold text-slate-800 mb-8 flex items-center drop-shadow-sm">
                 <div className="p-1.5 bg-white/60 rounded-xl shadow-sm border border-white mr-3">
@@ -353,6 +389,41 @@ export default function Home() {
                         <p className="text-slate-900 text-sm leading-relaxed font-bold">
                           {critique.solution}
                         </p>
+
+                        {/* NEW: Magic Rewrite Button and Display UI */}
+                        <div className="mt-4 pt-4 border-t border-slate-200/50">
+                          {!rewrites[idx]?.text ? (
+                            <button
+                              onClick={() => handleRewrite(idx, critique.issue, critique.solution)}
+                              disabled={rewrites[idx]?.loading}
+                              className="flex items-center text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-white/60 hover:bg-white/90 border border-white px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                            >
+                              {rewrites[idx]?.loading ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-3.5 h-3.5 mr-2" />
+                              )}
+                              {rewrites[idx]?.loading ? "Generating Magic Rewrite..." : "Rewrite with AI"}
+                            </button>
+                          ) : (
+                            <div className="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100/60 shadow-sm animate-in fade-in zoom-in duration-300">
+                              <span className="text-[10px] font-black tracking-widest text-indigo-500 uppercase mb-3 flex items-center">
+                                <Sparkles className="w-3.5 h-3.5 mr-1.5" /> 
+                                AI Optimized Bullet Point
+                              </span>
+                              <p className="text-slate-900 text-sm font-bold mb-3 italic">
+                                "{rewrites[idx].text}"
+                              </p>
+                              <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                                <span className="font-bold text-slate-700">Why this works:</span> {rewrites[idx].explanation}
+                              </p>
+                            </div>
+                          )}
+                          {rewrites[idx]?.error && (
+                            <p className="text-rose-500 text-xs mt-2 font-medium">{rewrites[idx]?.error}</p>
+                          )}
+                        </div>
+
                       </div>
                     </div>
                   </div>
