@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { SignInButton, Show, UserButton, useAuth } from "@clerk/nextjs";
 import { 
@@ -12,7 +12,10 @@ import {
   ArrowRight,
   TrendingUp,
   Target,
-  Sparkles
+  Sparkles,
+  History,
+  X,
+  Clock
 } from "lucide-react";
 
 type Critique = {
@@ -29,12 +32,18 @@ type AnalysisResult = {
   critiques: Critique[];
 };
 
-// NEW: Type for our individual rewrite states
 type RewriteState = {
   loading: boolean;
   text?: string;
   explanation?: string;
   error?: string;
+};
+
+// NEW: Type for the History Items
+type HistoryItem = {
+  id: string;
+  filename: string;
+  createdAt: string;
 };
 
 export default function Home() {
@@ -45,16 +54,30 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // NEW: State dictionary to track rewrite progress per critique index
   const [rewrites, setRewrites] = useState<Record<number, RewriteState>>({});
+  
+  // NEW: State for the History Sidebar
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // NEW: Automatically fetch history when user logs in or a new resume is analyzed
+  useEffect(() => {
+    if (userId) {
+      fetch(`http://127.0.0.1:8000/api/resumes/history?user_id=${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.history) setHistory(data.history);
+        })
+        .catch((err) => console.error("Failed to load history", err));
+    }
+  }, [userId, results]); // Adding 'results' as a dependency makes it refresh after a new upload!
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
       setResults(null);
       setError(null);
-      setRewrites({}); // Reset rewrites on new file
+      setRewrites({});
     }
   }, []);
 
@@ -100,26 +123,16 @@ export default function Home() {
     }
   };
 
-  // NEW: Function to call your new rewrite API
   const handleRewrite = async (idx: number, issue: string, solution: string) => {
-    // Set loading state for this specific critique
     setRewrites((prev) => ({ ...prev, [idx]: { loading: true } }));
-    
     try {
       const response = await fetch("http://127.0.0.1:8000/api/resumes/rewrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          original_text: issue, 
-          recommendation: solution 
-        }),
+        body: JSON.stringify({ original_text: issue, recommendation: solution }),
       });
-
       if (!response.ok) throw new Error("Failed to generate rewrite.");
-      
       const data = await response.json();
-      
-      // Update state with the newly rewritten text
       setRewrites((prev) => ({
         ...prev,
         [idx]: { loading: false, text: data.rewritten_text, explanation: data.explanation }
@@ -147,40 +160,93 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#F5F7FA] font-sans selection:bg-indigo-100 selection:text-indigo-900 relative overflow-hidden flex flex-col">
       
-      {/* Enhanced Ambient Background Entities for Glass Refraction */}
+      {/* NEW: History Sidebar Overlay */}
+      {showHistory && (
+        <div 
+          className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
+          onClick={() => setShowHistory(false)}
+        ></div>
+      )}
+
+      {/* NEW: Sliding Glass History Panel */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white/60 backdrop-blur-3xl border-r border-white/60 shadow-2xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+        <div className="p-6 border-b border-white/60 flex items-center justify-between bg-white/40">
+          <h2 className="text-xl font-extrabold text-slate-800 flex items-center">
+            <History className="w-5 h-5 mr-2 text-indigo-600" />
+            Recent Uploads
+          </h2>
+          <button 
+            onClick={() => setShowHistory(false)}
+            className="p-2 rounded-full hover:bg-white/60 transition-colors text-slate-500"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {history.length === 0 ? (
+            <div className="text-center text-slate-500 mt-10">
+              <FileText className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p>No past resumes found.</p>
+            </div>
+          ) : (
+            history.map((item) => (
+              <div key={item.id} className="p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-white hover:shadow-md transition-all cursor-pointer group">
+                <p className="font-bold text-sm text-slate-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">
+                  {item.filename}
+                </p>
+                <p className="text-xs font-medium text-slate-400 flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Ambient Background Entities */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-indigo-400/20 blur-[120px] mix-blend-multiply"></div>
         <div className="absolute top-[10%] right-[-5%] w-[35rem] h-[35rem] rounded-full bg-violet-400/20 blur-[120px] mix-blend-multiply"></div>
         <div className="absolute bottom-[-10%] left-[20%] w-[45rem] h-[45rem] rounded-full bg-blue-400/10 blur-[150px] mix-blend-multiply"></div>
       </div>
 
-      {/* Ultra-Thin Frosted Glass Navigation Bar */}
-      <nav className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-white/40 border-b border-white/60 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/40 border-b border-white/60 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="bg-gradient-to-br from-indigo-500 to-violet-600 p-2 rounded-xl shadow-inner border border-white/20">
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-800">AI Resume Analyzer</span>
+            <span className="font-bold text-xl tracking-tight text-slate-800 hidden sm:block">AI Resume Analyzer</span>
           </div>
-          <div>
+          <div className="flex items-center space-x-3">
             <Show when="signed-out">
               <SignInButton mode="modal">
-                <button className="px-5 py-2 text-sm font-semibold text-white bg-slate-900/90 backdrop-blur-md rounded-full hover:bg-slate-800 transition-all shadow-md hover:shadow-lg border border-slate-700">
+                <button className="px-5 py-2 text-sm font-semibold text-white bg-slate-900/90 backdrop-blur-md rounded-full hover:bg-slate-800 transition-all shadow-md border border-slate-700">
                   Sign In
                 </button>
               </SignInButton>
             </Show>
             <Show when="signed-in">
+              {/* NEW: History Toggle Button */}
+              <button
+                onClick={() => setShowHistory(true)}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-bold text-slate-700 bg-white/60 hover:bg-white/90 backdrop-blur-md rounded-full border border-white/80 shadow-sm transition-all"
+              >
+                <History className="w-4 h-4 text-indigo-600" />
+                <span className="hidden sm:inline">History</span>
+              </button>
               <UserButton appearance={{ elements: { avatarBox: "w-9 h-9 ring-2 ring-white/50 shadow-sm" } }} />
             </Show>
           </div>
         </div>
       </nav>
 
+      {/* App Body */}
       <div className="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 space-y-12 z-10">
         
-        {/* Premium Hero Section */}
+        {/* Hero Section */}
         <div className="text-center space-y-6 max-w-3xl mx-auto mt-6">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-indigo-700 text-xs font-bold tracking-wide uppercase shadow-sm">
             <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -194,7 +260,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* True Glassmorphism Input Form Card */}
+        {/* Input Form Card */}
         <div className="bg-white/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 p-8 sm:p-12 space-y-10 relative overflow-hidden">
           
           <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
@@ -222,7 +288,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Glass Dropzone */}
           <div
             {...getRootProps()}
             className={`group relative z-10 flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 ease-out overflow-hidden ${
@@ -243,7 +308,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* File Selected State */}
           {file && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
               <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white/60 backdrop-blur-xl rounded-2xl shadow-sm border border-white/80">
@@ -390,7 +454,6 @@ export default function Home() {
                           {critique.solution}
                         </p>
 
-                        {/* NEW: Magic Rewrite Button and Display UI */}
                         <div className="mt-4 pt-4 border-t border-slate-200/50">
                           {!rewrites[idx]?.text ? (
                             <button
@@ -423,7 +486,6 @@ export default function Home() {
                             <p className="text-rose-500 text-xs mt-2 font-medium">{rewrites[idx]?.error}</p>
                           )}
                         </div>
-
                       </div>
                     </div>
                   </div>

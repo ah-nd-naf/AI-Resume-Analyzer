@@ -198,3 +198,22 @@ async def rewrite_bullet(request: RewriteRequest):
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating rewrite: {str(e)}")
+
+
+@app.get("/api/resumes/history")
+async def get_user_history(user_id: str):
+    """Fetches all past resumes uploaded by a specific user."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+        
+    try:
+        # Ask Prisma for all resumes matching this user, ordered by newest first
+        history = await db.resume.find_many(
+            where={"userId": user_id},
+            order={"createdAt": "desc"}
+        )
+        
+        return {"history": history}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
