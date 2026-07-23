@@ -8,7 +8,7 @@ from google.genai import types
 import pdfplumber
 import json
 import io
-import time  # NEW: Required for our auto-retry sleep mechanism
+import time
 
 # Initialize the Prisma client
 db = Prisma()
@@ -37,6 +37,7 @@ class RewriteResponse(BaseModel):
     rewritten_text: str = Field(description="A highly professional, impactful, and quantified rewritten bullet point.")
     explanation: str = Field(description="A brief 1-sentence explanation of why this new version is much stronger.")
 
+
 # Handles connecting to the database when the server starts and disconnecting on shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +61,7 @@ app.add_middleware(
 async def root():
     return {"message": "Backend is running successfully!"}
 
+
 @app.post("/api/resumes/upload")
 async def upload_resume(
     file: UploadFile = File(...),
@@ -72,7 +74,7 @@ async def upload_resume(
     try:
         content = await file.read()
         
-        # 1. Extract text from PDF
+        # 1. Extract text from PDF using standard parsing
         extracted_text = ""
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             for page in pdf.pages:
@@ -81,13 +83,34 @@ async def upload_resume(
                     extracted_text += text + "\n"
         
         cleaned_text = extracted_text.strip()
-        if not cleaned_text:
-            raise HTTPException(
-                status_code=400,
-                detail="Could not extract text from the PDF. Please ensure the PDF is not a scanned image or empty."
-            )
         
-        # 2. Save the extracted raw text to NeonDB using Prisma
+        # 2. OCR FALLBACK: If standard extraction fails, use Gemini Vision!
+        if not cleaned_text:
+            print("Standard extraction failed (likely a scanned image). Triggering Gemini Vision OCR...")
+            try:
+                ocr_prompt = "You are an OCR engine. Extract all the text from this document accurately. Preserve the original layout, bullet points, and structure as much as possible. Do not add any extra conversational text."
+                
+                ocr_response = ai_client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=[
+                        types.Part.from_bytes(data=content, mime_type="application/pdf"),
+                        ocr_prompt
+                    ]
+                )
+                cleaned_text = ocr_response.text.strip()
+                print("OCR Fallback Successful!")
+                
+            except Exception as ocr_err:
+                print(f"OCR Fallback failed: {ocr_err}")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Could not extract text from the PDF, and OCR fallback failed. Please ensure the document is clear and readable."
+                )
+
+        if not cleaned_text:
+            raise HTTPException(status_code=400, detail="Document appears to be completely empty or unreadable.")
+        
+        # 3. Save the extracted raw text to NeonDB using Prisma
         resume_record = await db.resume.create(
             data={
                 "filename": file.filename,
@@ -96,7 +119,7 @@ async def upload_resume(
             }
         )
         
-        # 3. Build a dynamic prompt for Gemini
+        # 4. Build a dynamic prompt for Gemini
         prompt = f"""
         Analyze the following extracted resume text thoroughly. Rate it out of 100 on ATS compatibility, 
         provide a professional summary of the assessment, and list distinct, explicit formatting or content critiques 
@@ -105,22 +128,15 @@ async def upload_resume(
         
         if job_description:
             prompt += f"""
-            
             Additionally, compare the resume against the following Job Description. 
             Calculate a strict match_percentage (0-100) representing how well the candidate fits the role.
             Also, provide a gap_analysis as a list of 3-5 missing critical keywords, skills, or qualifications.
-            
-            Job Description:
-            {job_description}
+            Job Description:\n{job_description}
             """
             
-        prompt += f"""
+        prompt += f"\nResume text:\n{cleaned_text}"
         
-        Resume text:
-        {cleaned_text}
-        """
-        
-        # NEW: Call Gemini using the modern SDK with an Auto-Retry Loop
+        # 5. Call Gemini using the modern SDK with an Auto-Retry Loop
         max_retries = 3
         structured_analysis = None
         
@@ -135,20 +151,17 @@ async def upload_resume(
                         response_schema=ResumeAnalysis,
                     ),
                 )
-                
                 structured_analysis = ai_response.parsed
                 break # Success! Break out of the retry loop
                 
             except Exception as api_error:
-                # Check if it is a 503 error and we haven't run out of retries
                 if "503" in str(api_error) and attempt < max_retries - 1:
                     print(f"Google servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
                     time.sleep(3)
                 else:
-                    # If it's a different error, or we are out of retries, throw the error
                     raise api_error
         
-        # 4. Return the complete payload
+        # 6. Return the complete payload
         return {
             "message": "Resume successfully processed, saved, and analyzed!",
             "resume_id": resume_record.id,
@@ -166,14 +179,11 @@ async def rewrite_bullet(request: RewriteRequest):
         prompt = f"""
         You are an expert executive resume writer. 
         A candidate has a weak section in their resume based on the following context.
-        
         Current Weak State: {request.original_text}
         Actionable Recommendation Given: {request.recommendation}
-        
         Please provide a singular, highly professional, quantified, and impactful rewritten version of this text that the candidate can copy and paste directly into their resume.
         """
         
-        # NEW: Auto-Retry Loop for the Rewrite Endpoint
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -186,7 +196,6 @@ async def rewrite_bullet(request: RewriteRequest):
                         response_schema=RewriteResponse,
                     ),
                 )
-                
                 return ai_response.parsed
                 
             except Exception as api_error:
@@ -207,12 +216,10 @@ async def get_user_history(user_id: str):
         raise HTTPException(status_code=400, detail="User ID is required")
         
     try:
-        # Ask Prisma for all resumes matching this user, ordered by newest first
         history = await db.resume.find_many(
             where={"userId": user_id},
             order={"createdAt": "desc"}
         )
-        
         return {"history": history}
         
     except Exception as e:
