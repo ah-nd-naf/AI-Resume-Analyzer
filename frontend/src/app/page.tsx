@@ -15,7 +15,8 @@ import {
   Sparkles,
   History,
   X,
-  Clock
+  Clock,
+  Download // NEW: Imported the Download icon
 } from "lucide-react";
 
 type Critique = {
@@ -39,7 +40,6 @@ type RewriteState = {
   error?: string;
 };
 
-// NEW: Type for the History Items
 type HistoryItem = {
   id: string;
   filename: string;
@@ -56,11 +56,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [rewrites, setRewrites] = useState<Record<number, RewriteState>>({});
   
-  // NEW: State for the History Sidebar
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // NEW: State to track if the PDF is currently generating
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  // NEW: Automatically fetch history when user logs in or a new resume is analyzed
   useEffect(() => {
     if (userId) {
       fetch(`http://127.0.0.1:8000/api/resumes/history?user_id=${userId}`)
@@ -70,7 +71,7 @@ export default function Home() {
         })
         .catch((err) => console.error("Failed to load history", err));
     }
-  }, [userId, results]); // Adding 'results' as a dependency makes it refresh after a new upload!
+  }, [userId, results]); 
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -145,6 +146,34 @@ export default function Home() {
     }
   };
 
+  // NEW: Function to generate and download the PDF Report
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('report-container');
+    if (!element) return;
+
+    setIsDownloading(true);
+    
+    try {
+      // Dynamically import html2pdf only on the client side to avoid Next.js SSR errors
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const opt = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     `${file?.name ? file.name.split('.')[0] : 'Resume'}_AI_Analysis.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#020617' }, // Matches your bg-slate-950
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      alert("Something went wrong while generating the PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-400 stroke-emerald-400";
     if (score >= 60) return "text-amber-400 stroke-amber-400";
@@ -160,7 +189,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 font-sans text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-100 relative overflow-hidden flex flex-col">
       
-      {/* NEW: History Sidebar Overlay */}
       {showHistory && (
         <div 
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity" 
@@ -168,7 +196,6 @@ export default function Home() {
         ></div>
       )}
 
-      {/* NEW: Sliding Glass History Panel */}
       <div className={`fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-slate-900/60 backdrop-blur-3xl border-r border-white/10 shadow-2xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-slate-900/40">
           <h2 className="text-xl font-extrabold text-white flex items-center">
@@ -204,14 +231,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Ambient Background Entities */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-cyan-500/10 blur-[120px] mix-blend-screen"></div>
         <div className="absolute top-[10%] right-[-5%] w-[35rem] h-[35rem] rounded-full bg-fuchsia-500/10 blur-[120px] mix-blend-screen"></div>
         <div className="absolute bottom-[-10%] left-[20%] w-[45rem] h-[45rem] rounded-full bg-indigo-500/10 blur-[150px] mix-blend-screen"></div>
       </div>
 
-      {/* Navigation Bar */}
       <nav className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-slate-950/50 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -229,7 +254,6 @@ export default function Home() {
               </SignInButton>
             </Show>
             <Show when="signed-in">
-              {/* NEW: History Toggle Button */}
               <button
                 onClick={() => setShowHistory(true)}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-bold text-slate-300 bg-slate-800/50 hover:bg-slate-700/50 hover:text-white backdrop-blur-md rounded-full border border-white/10 shadow-sm transition-all"
@@ -243,10 +267,8 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* App Body */}
       <div className="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 space-y-12 z-10">
         
-        {/* Hero Section */}
         <div className="text-center space-y-6 max-w-3xl mx-auto mt-6">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900/50 backdrop-blur-md border border-white/10 text-cyan-400 text-xs font-bold tracking-wide uppercase shadow-sm">
             <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -260,7 +282,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Input Form Card */}
         <div className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/10 p-8 sm:p-12 space-y-10 relative overflow-hidden">
           
           <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
@@ -347,8 +368,9 @@ export default function Home() {
           )}
         </div>
 
+        {/* NEW: Added id="report-container" so html2pdf knows what to export */}
         {results && (
-          <div className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
+          <div id="report-container" className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
             
             <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
 
@@ -376,7 +398,22 @@ export default function Home() {
               </div>
 
               <div className="p-10 md:col-span-2 flex flex-col justify-center bg-slate-900/20">
-                <h3 className="text-2xl font-extrabold text-white mb-4 drop-shadow-sm">Executive Summary</h3>
+                {/* NEW: Added a header wrapper for the title and the download button */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                  <h3 className="text-2xl font-extrabold text-white drop-shadow-sm">Executive Summary</h3>
+                  
+                  {/* NEW: Download Report Button (Hidden when html2pdf renders to avoid printing the button itself) */}
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
+                    data-html2canvas-ignore="true" // This magically hides the button inside the final PDF!
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-sm font-bold rounded-xl border border-cyan-500/30 transition-all disabled:opacity-50"
+                  >
+                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    <span>{isDownloading ? 'Generating...' : 'Export PDF'}</span>
+                  </button>
+                </div>
+                
                 <p className="text-slate-300 leading-relaxed text-lg mb-8 font-medium">
                   {results.summary}
                 </p>
@@ -454,7 +491,8 @@ export default function Home() {
                           {critique.solution}
                         </p>
 
-                        <div className="mt-4 pt-4 border-t border-slate-700/50">
+                        <div className="mt-4 pt-4 border-t border-slate-700/50" data-html2canvas-ignore="true">
+                          {/* We also ignore the Magic Rewrite button in the PDF to keep the print clean */}
                           {!rewrites[idx]?.text ? (
                             <button
                               onClick={() => handleRewrite(idx, critique.issue, critique.solution)}
