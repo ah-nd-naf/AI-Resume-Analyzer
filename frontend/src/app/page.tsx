@@ -16,7 +16,7 @@ import {
   History,
   X,
   Clock,
-  Download // NEW: Imported the Download icon
+  Download 
 } from "lucide-react";
 
 type Critique = {
@@ -58,8 +58,6 @@ export default function Home() {
   
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  
-  // NEW: State to track if the PDF is currently generating
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -146,7 +144,6 @@ export default function Home() {
     }
   };
 
-  // NEW: Function to generate and download the PDF Report
   const handleDownloadPDF = async () => {
     const element = document.getElementById('report-container');
     if (!element) return;
@@ -154,14 +151,12 @@ export default function Home() {
     setIsDownloading(true);
     
     try {
-      // Dynamically import html2pdf only on the client side to avoid Next.js SSR errors
       const html2pdf = (await import('html2pdf.js')).default;
-      
       const opt = {
         margin:       [0.5, 0.5, 0.5, 0.5],
         filename:     `${file?.name ? file.name.split('.')[0] : 'Resume'}_AI_Analysis.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#020617' }, // Matches your bg-slate-950
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#020617' }, 
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
@@ -368,7 +363,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* NEW: Added id="report-container" so html2pdf knows what to export */}
         {results && (
           <div id="report-container" className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700 relative">
             
@@ -398,15 +392,13 @@ export default function Home() {
               </div>
 
               <div className="p-10 md:col-span-2 flex flex-col justify-center bg-slate-900/20">
-                {/* NEW: Added a header wrapper for the title and the download button */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
                   <h3 className="text-2xl font-extrabold text-white drop-shadow-sm">Executive Summary</h3>
                   
-                  {/* NEW: Download Report Button (Hidden when html2pdf renders to avoid printing the button itself) */}
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isDownloading}
-                    data-html2canvas-ignore="true" // This magically hides the button inside the final PDF!
+                    data-html2canvas-ignore="true" 
                     className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-sm font-bold rounded-xl border border-cyan-500/30 transition-all disabled:opacity-50"
                   >
                     {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -492,7 +484,6 @@ export default function Home() {
                         </p>
 
                         <div className="mt-4 pt-4 border-t border-slate-700/50" data-html2canvas-ignore="true">
-                          {/* We also ignore the Magic Rewrite button in the PDF to keep the print clean */}
                           {!rewrites[idx]?.text ? (
                             <button
                               onClick={() => handleRewrite(idx, critique.issue, critique.solution)}
