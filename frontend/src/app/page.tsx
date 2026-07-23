@@ -46,6 +46,8 @@ type HistoryItem = {
   createdAt: string;
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 export default function Home() {
   const { userId } = useAuth();
   
@@ -62,7 +64,7 @@ export default function Home() {
 
   useEffect(() => {
     if (userId) {
-      fetch(`http://127.0.0.1:8000/api/resumes/history?user_id=${userId}`)
+      fetch(`${API_BASE_URL}/api/resumes/history?user_id=${userId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.history) setHistory(data.history);
@@ -104,7 +106,7 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/resumes/upload", {
+      const response = await fetch(`${API_BASE_URL}/api/resumes/upload`, {
         method: "POST",
         body: formData,
       });
@@ -125,7 +127,7 @@ export default function Home() {
   const handleRewrite = async (idx: number, issue: string, solution: string) => {
     setRewrites((prev) => ({ ...prev, [idx]: { loading: true } }));
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/resumes/rewrite", {
+      const response = await fetch(`${API_BASE_URL}/api/resumes/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ original_text: issue, recommendation: solution }),
