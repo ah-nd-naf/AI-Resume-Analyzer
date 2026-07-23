@@ -157,9 +157,9 @@ export default function Home() {
       const opt = {
         margin:       0.5,
         filename:     `${file?.name ? file.name.split('.')[0] : 'Resume'}_AI_Analysis.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#020617' }, 
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        jsPDF:        { unit: 'in' as const, format: 'letter', orientation: 'portrait' as const }
       };
 
       await html2pdf().set(opt).from(element).save();
