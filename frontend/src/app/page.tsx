@@ -568,8 +568,9 @@ export default function Home() {
                                     ) : (
                                       
                                       /* Terminal style comparisons */
-                                      <div className="mt-2 rounded-2xl bg-slate-900 border border-cyan-500/30 p-4 overflow-hidden shadow-[0_0_25px_rgba(34,211,238,0.08)] animate-in fade-in duration-300">
-                                        <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-3">
+                                      <div className="mt-2 rounded-2xl bg-slate-900 border border-cyan-500/30 shadow-[0_0_25px_rgba(34,211,238,0.08)] animate-in fade-in duration-300 overflow-hidden">
+                                        {/* Sticky header bar */}
+                                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-slate-900 sticky top-0 z-10">
                                           <div className="flex items-center space-x-1.5">
                                             <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
@@ -579,27 +580,30 @@ export default function Home() {
                                           <span className="text-[9px] text-cyan-300 font-bold bg-cyan-500/20 border border-cyan-400/30 px-1.5 py-0.5 rounded">AUTO_REWRITE</span>
                                         </div>
                                         
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[11px] font-mono mb-3">
-                                          <div className="space-y-1">
-                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Before</span>
-                                            <p className="text-slate-300 bg-rose-900/30 p-2.5 rounded-lg border border-rose-500/20 line-clamp-3">
-                                              {critique.issue}
+                                        {/* Scrollable body */}
+                                        <div className="p-4 max-h-72 overflow-y-auto rewrite-scroll">
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[11px] font-mono mb-3">
+                                            <div className="space-y-1">
+                                              <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Before</span>
+                                              <p className="text-slate-300 bg-rose-900/30 p-2.5 rounded-lg border border-rose-500/20 leading-relaxed">
+                                                {critique.issue}
+                                              </p>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <span className="text-[9px] text-cyan-300 uppercase tracking-wider block">Optimized</span>
+                                              <p className="text-emerald-200 bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-500/20 font-semibold leading-relaxed">
+                                                {rewrites[realIdx].text}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="pt-2.5 border-t border-white/10 text-xs text-slate-300 flex items-start">
+                                            <Sparkle className="w-3.5 h-3.5 text-cyan-400 mr-2 flex-shrink-0 mt-0.5" />
+                                            <p>
+                                              <span className="font-semibold text-white">Why it fits: </span>
+                                              {rewrites[realIdx].explanation}
                                             </p>
                                           </div>
-                                          <div className="space-y-1">
-                                            <span className="text-[9px] text-cyan-300 uppercase tracking-wider block">Optimized</span>
-                                            <p className="text-emerald-200 bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-500/20 font-semibold line-clamp-3">
-                                              {rewrites[realIdx].text}
-                                            </p>
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="pt-2.5 border-t border-white/10 text-xs text-slate-300 flex items-start">
-                                          <Sparkle className="w-3.5 h-3.5 text-cyan-400 mr-2 flex-shrink-0 mt-0.5" />
-                                          <p>
-                                            <span className="font-semibold text-white">Why it fits: </span>
-                                            {rewrites[realIdx].explanation}
-                                          </p>
                                         </div>
                                       </div>
 

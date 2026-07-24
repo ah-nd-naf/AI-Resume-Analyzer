@@ -144,3 +144,18 @@ body {
   animation: float-slow 12s infinite ease-in-out;
 }
 
+/* Custom scrollbar for the rewrite terminal card */
+.rewrite-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.rewrite-scroll::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  border-radius: 10px;
+}
+.rewrite-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6); /* slate-500/60 */
+  border-radius: 10px;
+}
+.rewrite-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8); /* slate-400/80 */
+}
