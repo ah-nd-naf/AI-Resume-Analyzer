@@ -216,7 +216,7 @@ export default function Home() {
       <div className={`fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-background/95 backdrop-blur-3xl border-r border-border shadow-2xl transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
         <div className="p-6 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-bold text-foreground flex items-center">
-            <History className="w-5 h-5 mr-2.5 text-purple-400" />
+            <History className="w-5 h-5 mr-2.5 text-purple-600 dark:text-purple-400" />
             Recent Analyses
           </h2>
           <button 
@@ -235,11 +235,11 @@ export default function Home() {
           ) : (
             history.map((item) => (
               <div key={item.id} className="p-4 premium-glass-secondary premium-glass-hover rounded-2xl cursor-pointer group">
-                <p className="font-semibold text-sm text-slate-200 truncate mb-1.5 group-hover:text-purple-400 transition-colors">
+                <p className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate mb-1.5 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                   {item.filename}
                 </p>
-                <p className="text-xs font-medium text-slate-500 flex items-center">
-                  <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-600" />
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center">
+                  <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-600 dark:text-slate-500" />
                   {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -273,7 +273,7 @@ export default function Home() {
                 onClick={() => setShowHistory(true)}
                 className="flex items-center space-x-2 px-4 py-2 text-xs font-bold text-foreground premium-glass-secondary hover:premium-glass-hover rounded-xl transition-all cursor-pointer"
               >
-                <History className="w-4 h-4 text-purple-400" />
+                <History className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>History</span>
               </button>
               <UserButton appearance={{ elements: { avatarBox: "w-8 h-8 ring-2 ring-purple-500/30 shadow-sm" } }} />
@@ -295,7 +295,7 @@ export default function Home() {
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-200 dark:to-slate-400">ATS Resume</span>{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-500">Intelligence</span>
           </h1>
-          <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
             Elevate your professional narrative. Paste your target job description, drop your resume, and get instant feedback with AI-powered critiques and optimized bullet-points.
           </p>
         </section>
@@ -308,17 +308,17 @@ export default function Home() {
             
             {/* Job Description Panel */}
             <div className="space-y-3">
-              <label htmlFor="jd" className="flex items-center text-xs font-bold tracking-widest text-purple-400 uppercase">
+              <label htmlFor="jd" className="flex items-center text-xs font-bold tracking-widest text-purple-600 dark:text-purple-400 uppercase">
                 <Briefcase className="w-4 h-4 mr-2" />
                 Target Job Description
-                <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-white/[0.04] border border-white/5 text-slate-400 lowercase">
+                <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/5 text-slate-600 dark:text-slate-400 lowercase">
                   Optional
                 </span>
               </label>
               <textarea
                 id="jd"
                 rows={7}
-                className="block w-full rounded-2xl border border-border p-4 text-foreground bg-background/60 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent transition-all sm:text-sm resize-none premium-glass-secondary"
+                className="block w-full rounded-2xl border border-border p-4 text-foreground bg-background/60 placeholder:text-slate-600 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-transparent transition-all sm:text-sm resize-none premium-glass-secondary"
                 placeholder="Paste the target job description to run match scoring and keyword gap reviews..."
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
@@ -327,10 +327,10 @@ export default function Home() {
 
             {/* Dropzone Upload Panel */}
             <div className="space-y-3 flex flex-col">
-              <label className="flex items-center text-xs font-bold tracking-widest text-cyan-400 uppercase">
+              <label className="flex items-center text-xs font-bold tracking-widest text-cyan-600 dark:text-cyan-400 uppercase">
                 <UploadCloud className="w-4 h-4 mr-2" />
                 Resume Upload
-                <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-white/[0.04] border border-white/5 text-slate-400 lowercase">
+                <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/[0.04] border border-black/10 dark:border-white/5 text-slate-600 dark:text-slate-400 lowercase">
                   PDF only
                 </span>
               </label>
@@ -343,14 +343,14 @@ export default function Home() {
                 }`}
               >
                 <input {...getInputProps()} />
-                <div className={`p-4 rounded-xl mb-3.5 transition-all border border-border ${isDragActive ? "bg-cyan-900/45 text-cyan-400" : "bg-foreground/5 text-slate-500 group-hover:text-purple-500 group-hover:bg-purple-500/10"}`}>
+                <div className={`p-4 rounded-xl mb-3.5 transition-all border border-border ${isDragActive ? "bg-cyan-100 dark:bg-cyan-900/45 text-cyan-600 dark:text-cyan-400" : "bg-foreground/5 text-slate-600 dark:text-slate-500 group-hover:text-purple-600 dark:group-hover:text-purple-500 group-hover:bg-purple-500/10"}`}>
                   <UploadCloud className="h-7 w-7 transition-colors duration-300" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-foreground">
                     {isDragActive ? "Drop your resume now" : "Drag & drop file or browse"}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">Accepts PDF documents up to 5MB</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">Accepts PDF documents up to 5MB</p>
                 </div>
               </div>
             </div>
@@ -362,12 +362,12 @@ export default function Home() {
             <div className="pt-4 border-t border-border animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex flex-col sm:flex-row items-center justify-between p-3 premium-glass-secondary rounded-2xl gap-4">
                 <div className="flex items-center space-x-3.5 pl-2">
-                  <div className="p-2.5 bg-background border border-border rounded-xl text-purple-400">
+                  <div className="p-2.5 bg-background border border-border rounded-xl text-purple-600 dark:text-purple-400">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-200 line-clamp-1">{file.name}</p>
-                    <p className="text-xs text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">{file.name}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
                 
@@ -432,20 +432,20 @@ export default function Home() {
                 {/* Secondary Indicators */}
                 <div className="grid grid-cols-3 w-full gap-2 mt-8 pt-6 border-t border-border text-center">
                   <div>
-                    <span className="block text-xs font-semibold text-slate-500">JD Fit</span>
-                    <span className="text-sm font-bold text-cyan-400 mt-1 block">
+                    <span className="block text-xs font-semibold text-slate-600 dark:text-slate-500">JD Fit</span>
+                    <span className="text-sm font-bold text-cyan-600 dark:text-cyan-400 mt-1 block">
                       {results.match_percentage ? `${results.match_percentage}%` : "—"}
                     </span>
                   </div>
                   <div>
-                    <span className="block text-xs font-semibold text-slate-500">Impact</span>
-                    <span className="text-sm font-bold text-purple-400 mt-1 block">
+                    <span className="block text-xs font-semibold text-slate-600 dark:text-slate-500">Impact</span>
+                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400 mt-1 block">
                       {Math.max(50, 100 - results.critiques.length * 7)}%
                     </span>
                   </div>
                   <div>
-                    <span className="block text-xs font-semibold text-slate-500">Readability</span>
-                    <span className="text-sm font-bold text-emerald-400 mt-1 block">
+                    <span className="block text-xs font-semibold text-slate-600 dark:text-slate-500">Readability</span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
                       {Math.min(95, 60 + results.ats_score * 0.35)}%
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export default function Home() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-foreground flex items-center">
-                      <Target className="w-5 h-5 mr-2 text-indigo-400" />
+                      <Target className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
                       Executive Assessment
                     </h3>
                     
@@ -467,7 +467,7 @@ export default function Home() {
                       data-html2canvas-ignore="true" 
                       className="inline-flex items-center space-x-2 px-4 py-2 bg-foreground/5 hover:bg-foreground/10 text-foreground text-xs font-bold rounded-xl border border-border transition-all cursor-pointer disabled:opacity-50"
                     >
-                      {isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-cyan-400" />}
+                      {isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />}
                       <span>{isDownloading ? "Generating PDF..." : "Export Report"}</span>
                     </button>
                   </div>
@@ -480,13 +480,13 @@ export default function Home() {
                 {/* Gap Analysis / Missing Keywords */}
                 {results.match_percentage && results.gap_analysis && results.gap_analysis.length > 0 && (
                   <div className="mt-8 pt-6 border-t border-border space-y-3">
-                    <span className="text-[10px] font-bold tracking-widest text-cyan-400 uppercase flex items-center">
+                    <span className="text-[10px] font-bold tracking-widest text-cyan-600 dark:text-cyan-400 uppercase flex items-center">
                       <Target className="w-3.5 h-3.5 mr-1.5" />
                       Missing Keyword Gap Analysis
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {results.gap_analysis.map((gap, i) => (
-                        <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-background border border-border text-cyan-600 dark:text-cyan-300">
+                        <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-background border border-border text-cyan-700 dark:text-cyan-300">
                           <AlertCircle className="w-3 h-3 mr-1.5" />
                           {gap}
                         </span>
@@ -501,7 +501,7 @@ export default function Home() {
             {/* Structured Critiques & Rewrites */}
             <div className="premium-glass rounded-[2rem] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] mt-8">
               <h3 className="text-xl font-bold text-foreground mb-6 flex items-center">
-                <Layers className="w-5 h-5 mr-2 text-purple-400" />
+                <Layers className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
                 Strategic Action Plan
               </h3>
               
@@ -509,11 +509,11 @@ export default function Home() {
                 {critiqueCategories.map((category) => (
                   <div key={category} className="space-y-4">
                     <div className="flex items-center space-x-2">
-                      <ChevronRight className="w-4 h-4 text-purple-400" />
-                      <h4 className="text-xs font-bold tracking-widest text-purple-300 uppercase">
+                      <ChevronRight className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <h4 className="text-xs font-bold tracking-widest text-purple-700 dark:text-purple-300 uppercase">
                         {category}
                       </h4>
-                      <span className="h-[1px] flex-1 bg-white/5"></span>
+                      <span className="h-[1px] flex-1 bg-black/5 dark:bg-white/5"></span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -530,11 +530,11 @@ export default function Home() {
                                 
                                 {/* Issue block */}
                                 <div className="space-y-2">
-                                  <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase flex items-center">
+                                  <span className="text-[10px] font-bold tracking-widest text-slate-600 dark:text-slate-500 uppercase flex items-center">
                                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
                                     Identified Friction Point
                                   </span>
-                                  <p className="text-slate-300 text-sm leading-relaxed font-medium">
+                                  <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium">
                                     {critique.issue}
                                   </p>
                                 </div>
@@ -542,26 +542,26 @@ export default function Home() {
                                 {/* Recommendation & action block */}
                                 <div className="space-y-3 flex flex-col justify-between">
                                   <div className="space-y-2">
-                                    <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase flex items-center">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
+                                    <span className="text-[10px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase flex items-center">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 mr-2 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
                                       Action Recommendation
                                     </span>
-                                    <p className="text-slate-200 text-sm leading-relaxed font-semibold">
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-semibold">
                                       {critique.solution}
                                     </p>
                                   </div>
 
-                                  <div className="pt-3 border-t border-white/5" data-html2canvas-ignore="true">
+                                  <div className="pt-3 border-t border-black/5 dark:border-white/5" data-html2canvas-ignore="true">
                                     {!rewrites[realIdx]?.text ? (
                                       <button
                                         onClick={() => handleRewrite(realIdx, critique.issue, critique.solution)}
                                         disabled={rewrites[realIdx]?.loading}
-                                        className="inline-flex items-center text-xs font-bold text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 border border-cyan-500/20 px-3.5 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                                        className="inline-flex items-center text-xs font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-950/20 hover:bg-cyan-200 dark:hover:bg-cyan-950/40 border border-cyan-300 dark:border-cyan-500/20 px-3.5 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50"
                                       >
                                         {rewrites[realIdx]?.loading ? (
-                                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-cyan-400" />
+                                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-cyan-700 dark:text-cyan-400" />
                                         ) : (
-                                          <Sparkle className="w-3.5 h-3.5 mr-2 text-cyan-400" />
+                                          <Sparkle className="w-3.5 h-3.5 mr-2 text-cyan-700 dark:text-cyan-400" />
                                         )}
                                         {rewrites[realIdx]?.loading ? "Optimizing Bullet..." : "Optimize with AI"}
                                       </button>
