@@ -17,7 +17,7 @@ db = Prisma()
 # It points to xAI's base URL and uses your new API key
 ai_client = OpenAI(
     api_key=os.environ.get("XAI_API_KEY"),
-    base_url="https://api.xai.com/v1",
+    base_url="https://api.x.ai/v1",
 )
 
 # Define Pydantic models for structured AI analysis response
