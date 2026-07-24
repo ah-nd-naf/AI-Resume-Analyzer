@@ -289,7 +289,7 @@ export default function Home() {
         <section className="text-center space-y-5 max-w-3xl mx-auto mt-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold tracking-wider shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-            <span>AI-Powered Resume Optimization v2.0</span>
+            <span>AI-Powered by Groq · Llama 3.3</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight pb-1">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-200 dark:to-slate-400">ATS Resume</span>{" "}
@@ -446,7 +446,7 @@ export default function Home() {
                   <div>
                     <span className="block text-xs font-semibold text-slate-600 dark:text-slate-500">Readability</span>
                     <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
-                      {Math.min(95, 60 + results.ats_score * 0.35)}%
+                      {Math.round(Math.min(95, 60 + results.ats_score * 0.35))}%
                     </span>
                   </div>
                 </div>
@@ -556,48 +556,48 @@ export default function Home() {
                                       <button
                                         onClick={() => handleRewrite(realIdx, critique.issue, critique.solution)}
                                         disabled={rewrites[realIdx]?.loading}
-                                        className="inline-flex items-center text-xs font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-950/20 hover:bg-cyan-200 dark:hover:bg-cyan-950/40 border border-cyan-300 dark:border-cyan-500/20 px-3.5 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                                        className="inline-flex items-center text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 border border-cyan-400/30 px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-50 shadow-[0_0_14px_rgba(34,211,238,0.3)] hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] hover:-translate-y-0.5"
                                       >
                                         {rewrites[realIdx]?.loading ? (
-                                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-cyan-700 dark:text-cyan-400" />
+                                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-white" />
                                         ) : (
-                                          <Sparkle className="w-3.5 h-3.5 mr-2 text-cyan-700 dark:text-cyan-400" />
+                                          <Sparkle className="w-3.5 h-3.5 mr-2 text-white" />
                                         )}
                                         {rewrites[realIdx]?.loading ? "Optimizing Bullet..." : "Optimize with AI"}
                                       </button>
                                     ) : (
                                       
                                       /* Terminal style comparisons */
-                                      <div className="mt-2 rounded-2xl bg-black/60 border border-cyan-500/20 p-4 overflow-hidden shadow-inner backdrop-blur-md animate-in fade-in duration-300">
-                                        <div className="flex items-center justify-between pb-2.5 border-b border-white/5 mb-3">
+                                      <div className="mt-2 rounded-2xl bg-slate-900 border border-cyan-500/30 p-4 overflow-hidden shadow-[0_0_25px_rgba(34,211,238,0.08)] animate-in fade-in duration-300">
+                                        <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-3">
                                           <div className="flex items-center space-x-1.5">
                                             <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                                            <span className="text-[9px] text-slate-500 font-mono pl-1.5">optimization-panel.sh</span>
+                                            <span className="text-[9px] text-slate-400 font-mono pl-1.5">optimization-panel.sh</span>
                                           </div>
-                                          <span className="text-[9px] text-cyan-400 font-bold bg-cyan-950/50 px-1.5 py-0.5 rounded">AUTO_REWRITE</span>
+                                          <span className="text-[9px] text-cyan-300 font-bold bg-cyan-500/20 border border-cyan-400/30 px-1.5 py-0.5 rounded">AUTO_REWRITE</span>
                                         </div>
                                         
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[11px] font-mono mb-3">
                                           <div className="space-y-1">
-                                            <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Before</span>
-                                            <p className="text-slate-400 bg-rose-950/20 p-2 rounded-lg border border-rose-950/40 line-clamp-3">
+                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Before</span>
+                                            <p className="text-slate-300 bg-rose-900/30 p-2.5 rounded-lg border border-rose-500/20 line-clamp-3">
                                               {critique.issue}
                                             </p>
                                           </div>
                                           <div className="space-y-1">
-                                            <span className="text-[9px] text-cyan-400 uppercase tracking-wider block">Optimized</span>
-                                            <p className="text-emerald-300 bg-emerald-950/20 p-2 rounded-lg border border-emerald-950/40 font-semibold line-clamp-3">
+                                            <span className="text-[9px] text-cyan-300 uppercase tracking-wider block">Optimized</span>
+                                            <p className="text-emerald-200 bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-500/20 font-semibold line-clamp-3">
                                               {rewrites[realIdx].text}
                                             </p>
                                           </div>
                                         </div>
                                         
-                                        <div className="pt-2.5 border-t border-white/5 text-xs text-slate-400 flex items-start">
+                                        <div className="pt-2.5 border-t border-white/10 text-xs text-slate-300 flex items-start">
                                           <Sparkle className="w-3.5 h-3.5 text-cyan-400 mr-2 flex-shrink-0 mt-0.5" />
                                           <p>
-                                            <span className="font-semibold text-slate-300">Why it fits: </span>
+                                            <span className="font-semibold text-white">Why it fits: </span>
                                             {rewrites[realIdx].explanation}
                                           </p>
                                         </div>
