@@ -3,18 +3,22 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from prisma import Prisma
-from google import genai
-from google.genai import types
+from openai import OpenAI
 import pdfplumber
 import json
 import io
+import os
 import time
 
 # Initialize the Prisma client
 db = Prisma()
 
-# Initialize the modern Google Gen AI client
-ai_client = genai.Client()
+# Initialize the Grok client using the OpenAI SDK standard
+# It points to xAI's base URL and uses your new API key
+ai_client = OpenAI(
+    api_key=os.environ.get("XAI_API_KEY"),
+    base_url="https://api.xai.com/v1",
+)
 
 # Define Pydantic models for structured AI analysis response
 class CritiqueItem(BaseModel):
@@ -48,7 +52,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
 
 # Add CORS middleware to allow the frontend to communicate with the backend
-import os
 from fastapi.middleware.cors import CORSMiddleware
 
 allowed_origins = [
@@ -90,31 +93,9 @@ async def upload_resume(
         
         cleaned_text = extracted_text.strip()
         
-        # 2. OCR FALLBACK: If standard extraction fails, use Gemini Vision!
+        # 2. OCR Fallback removed - Grok handles images, not raw PDF bytes natively via standard completion API
         if not cleaned_text:
-            print("Standard extraction failed (likely a scanned image). Triggering Gemini Vision OCR...")
-            try:
-                ocr_prompt = "You are an OCR engine. Extract all the text from this document accurately. Preserve the original layout, bullet points, and structure as much as possible. Do not add any extra conversational text."
-                
-                ocr_response = ai_client.models.generate_content(
-                    model="gemini-3.5-flash",
-                    contents=[
-                        types.Part.from_bytes(data=content, mime_type="application/pdf"),
-                        ocr_prompt
-                    ]
-                )
-                cleaned_text = ocr_response.text.strip()
-                print("OCR Fallback Successful!")
-                
-            except Exception as ocr_err:
-                print(f"OCR Fallback failed: {ocr_err}")
-                raise HTTPException(
-                    status_code=400,
-                    detail="Could not extract text from the PDF, and OCR fallback failed. Please ensure the document is clear and readable."
-                )
-
-        if not cleaned_text:
-            raise HTTPException(status_code=400, detail="Document appears to be completely empty or unreadable.")
+            raise HTTPException(status_code=400, detail="Document appears to be a completely unreadable scanned image.")
         
         # 3. Save the extracted raw text to NeonDB using Prisma
         resume_record = await db.resume.create(
@@ -125,7 +106,7 @@ async def upload_resume(
             }
         )
         
-        # 4. Build a dynamic prompt for Gemini
+        # 4. Build a dynamic prompt for Grok
         prompt = f"""
         Analyze the following extracted resume text thoroughly. Rate it out of 100 on ATS compatibility, 
         provide a professional summary of the assessment, and list distinct, explicit formatting or content critiques 
@@ -141,28 +122,35 @@ async def upload_resume(
             """
             
         prompt += f"\nResume text:\n{cleaned_text}"
+        prompt += f"\nPlease return your response strictly as a JSON object matching this schema: {json.dumps(ResumeAnalysis.model_json_schema())}"
         
-        # 5. Call Gemini using the modern SDK with an Auto-Retry Loop
+        # 5. Call Grok using standard chat.completions in JSON mode
         max_retries = 3
         structured_analysis = None
         
         for attempt in range(max_retries):
             try:
-                ai_response = ai_client.models.generate_content(
-                    model="gemini-3.5-flash",
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction="You are an expert ATS (Applicant Tracking System) optimization manager and professional resume writer.",
-                        response_mime_type="application/json",
-                        response_schema=ResumeAnalysis,
-                    ),
+                ai_response = ai_client.chat.completions.create(
+                    model="grok-2-latest",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert ATS (Applicant Tracking System) optimization manager and professional resume writer. You must output strictly valid JSON."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    response_format={"type": "json_object"},
                 )
-                structured_analysis = ai_response.parsed
+                structured_analysis = ResumeAnalysis.model_validate_json(ai_response.choices[0].message.content)
                 break # Success! Break out of the retry loop
                 
             except Exception as api_error:
-                if "503" in str(api_error) and attempt < max_retries - 1:
-                    print(f"Google servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                error_str = str(api_error)
+                if ("503" in error_str or "502" in error_str) and attempt < max_retries - 1:
+                    print(f"Grok servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
                     time.sleep(3)
                 else:
                     raise api_error
@@ -190,23 +178,31 @@ async def rewrite_bullet(request: RewriteRequest):
         Please provide a singular, highly professional, quantified, and impactful rewritten version of this text that the candidate can copy and paste directly into their resume.
         """
         
+        prompt += f"\nPlease output strictly valid JSON matching this schema: {json.dumps(RewriteResponse.model_json_schema())}"
+        
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                ai_response = ai_client.models.generate_content(
-                    model="gemini-3.5-flash",
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction="You are an expert resume writer. Output strictly in the requested JSON structure.",
-                        response_mime_type="application/json",
-                        response_schema=RewriteResponse,
-                    ),
+                ai_response = ai_client.chat.completions.create(
+                    model="grok-2-latest",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert resume writer. Output strictly valid JSON."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    response_format={"type": "json_object"},
                 )
-                return ai_response.parsed
+                return RewriteResponse.model_validate_json(ai_response.choices[0].message.content)
                 
             except Exception as api_error:
-                if "503" in str(api_error) and attempt < max_retries - 1:
-                    print(f"Google servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                error_str = str(api_error)
+                if ("503" in error_str or "502" in error_str) and attempt < max_retries - 1:
+                    print(f"Grok servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
                     time.sleep(3)
                 else:
                     raise api_error
