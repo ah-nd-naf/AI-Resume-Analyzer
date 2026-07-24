@@ -582,18 +582,18 @@ export default function Home() {
                                         
                                         {/* Scrollable body */}
                                         <div className="p-4 max-h-72 overflow-y-auto rewrite-scroll">
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[11px] font-mono mb-3">
-                                            <div className="space-y-1">
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-[11px] font-mono mb-3 items-stretch">
+                                            <div className="space-y-1 flex flex-col">
                                               <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Before</span>
-                                              <p className="text-slate-300 bg-rose-900/30 p-2.5 rounded-lg border border-rose-500/20 leading-relaxed">
+                                              <div className="flex-1 overflow-y-auto h-32 text-slate-300 bg-rose-900/30 p-2.5 rounded-lg border border-rose-500/20 leading-relaxed rewrite-scroll">
                                                 {critique.issue}
-                                              </p>
+                                              </div>
                                             </div>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1 flex flex-col">
                                               <span className="text-[9px] text-cyan-300 uppercase tracking-wider block">Optimized</span>
-                                              <p className="text-emerald-200 bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-500/20 font-semibold leading-relaxed">
+                                              <div className="flex-1 overflow-y-auto h-32 text-emerald-200 bg-emerald-900/30 p-2.5 rounded-lg border border-emerald-500/20 font-semibold leading-relaxed rewrite-scroll">
                                                 {rewrites[realIdx].text}
-                                              </p>
+                                              </div>
                                             </div>
                                           </div>
                                           
