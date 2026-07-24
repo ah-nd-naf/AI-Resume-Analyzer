@@ -13,11 +13,11 @@ import time
 # Initialize the Prisma client
 db = Prisma()
 
-# Initialize the Grok client using the OpenAI SDK standard
-# It points to xAI's base URL and uses your new API key
+# Initialize the Groq client using the OpenAI SDK standard
+# Groq is OpenAI-compatible, so we just point to their base URL
 ai_client = OpenAI(
-    api_key=os.environ.get("XAI_API_KEY"),
-    base_url="https://api.x.ai/v1",
+    api_key=os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
 )
 
 # Define Pydantic models for structured AI analysis response
@@ -131,7 +131,7 @@ async def upload_resume(
         for attempt in range(max_retries):
             try:
                 ai_response = ai_client.chat.completions.create(
-                    model="grok-2-latest",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {
                             "role": "system",
@@ -149,8 +149,8 @@ async def upload_resume(
                 
             except Exception as api_error:
                 error_str = str(api_error)
-                if ("503" in error_str or "502" in error_str) and attempt < max_retries - 1:
-                    print(f"Grok servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                if ("503" in error_str or "502" in error_str or "rate_limit" in error_str.lower()) and attempt < max_retries - 1:
+                    print(f"Groq servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
                     time.sleep(3)
                 else:
                     raise api_error
@@ -184,7 +184,7 @@ async def rewrite_bullet(request: RewriteRequest):
         for attempt in range(max_retries):
             try:
                 ai_response = ai_client.chat.completions.create(
-                    model="grok-2-latest",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {
                             "role": "system",
@@ -201,8 +201,8 @@ async def rewrite_bullet(request: RewriteRequest):
                 
             except Exception as api_error:
                 error_str = str(api_error)
-                if ("503" in error_str or "502" in error_str) and attempt < max_retries - 1:
-                    print(f"Grok servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
+                if ("503" in error_str or "502" in error_str or "rate_limit" in error_str.lower()) and attempt < max_retries - 1:
+                    print(f"Groq servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
                     time.sleep(3)
                 else:
                     raise api_error
