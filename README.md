@@ -3,12 +3,12 @@
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-8E75C2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Groq](https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
 [![Clerk](https://img.shields.io/badge/Clerk_Auth-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.com/)
 [![Prisma](https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma-client-py.readthedocs.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
 
-A highly professional, production-ready, dark-themed **AI Resume Analyzer** that evaluates your resume against ATS (Applicant Tracking Systems) standards and target job descriptions. Powered by the modern **Google Gen AI SDK**, it features a hybrid text parser (with dynamic visual OCR fallback), deep ATS metrics scoring, structured critiques, dynamic inline bullet point rewrites, user history tracking, and a print-formatted PDF export option.
+A highly professional, production-ready, dark-themed **AI Resume Analyzer** that evaluates your resume against ATS (Applicant Tracking Systems) standards and target job descriptions. Powered by the lightning-fast **Groq API** (using Llama 3.3), it features a fast text parser, deep ATS metrics scoring, structured critiques, dynamic inline bullet point rewrites, user history tracking, and a print-formatted PDF export option.
 
 ---
 
@@ -21,10 +21,9 @@ graph TD
     A[Frontend: Drag-and-Drop PDF] --> B(Backend: PDF Parser)
     B -->|Attempt Standard Text Extraction| C{Text Extracted?}
     C -->|Yes| E[Save Raw Text to DB]
-    C -->|No: Scanned/Image PDF| D[OCR Fallback: Gemini 3.5 Multimodal PDF Parsing]
-    D --> E
+    C -->|No: Scanned/Image PDF| D[Error: Scanned Image PDF]
     E --> F[Generate Dynamic Analysis Prompt]
-    F --> G[Call Gemini API with Structured Pydantic Schema]
+    F --> G[Call Groq API with Structured Pydantic Schema]
     G -->|Parse structured response| H[Save Results]
     H --> I[Frontend Dashboard: Glassmorphic UI Render]
     I -->|User triggers| J[Inline Bullet Point AI Rewrite]
@@ -36,9 +35,9 @@ graph TD
 ## ✨ Core Features
 
 1. **Futuristic Dark-Mode Glassmorphism**: Tailored user interface featuring dynamic, animated purple/cyan gradient orbs, frosted glass containers (`backdrop-blur`), sleek typography, and responsive grid layouts.
-2. **Hybrid Text Extraction & OCR Fallback**:
+2. **Robust Text Extraction**:
    - Primary: Fast text extraction via `pdfplumber`.
-   - Secondary (OCR): Detects empty text inputs (commonly scanned PDF files) and pipes the raw PDF bytes into a multimodal prompt with the **Gemini 3.5 Flash** model for layout-preserved OCR.
+   - Validation: Detects empty text inputs (commonly scanned image-based PDF files) and gracefully returns a descriptive error guiding the user.
 3. **Structured ATS Intelligence**:
    - **General Score**: An overall ATS rating out of 100.
    - **Job Matching**: Dynamic matching metrics (0-100%) against target Job Descriptions.
@@ -47,6 +46,7 @@ graph TD
 4. **Actionable Critiques & Inline Rewriting**:
    - Breaks down items by Category (e.g., Formatting, Impact, Keywords).
    - Allows users to generate high-impact, quantified rewrites inside their browser card using an automated retry-mechanism endpoint.
+   - Features a side-by-side terminal-style comparison panel with equal-height, independently scrollable "Before" and "Optimized" views to handle long text gracefully.
 5. **PDF Export**:
    - Uses `html2pdf.js` to compile the evaluation dashboard into a letter-format PDF.
    - Automatically cleans up the PDF report using helper attributes (`data-html2canvas-ignore="true"`) to exclude UI buttons from the generated document.
@@ -74,7 +74,7 @@ graph TD
 | | `html2pdf.js` | Direct client-side DOM-to-PDF export handler (uses `html2canvas` & `jsPDF` internally). |
 | | `react-dropzone` | Drag-and-drop file inputs handler with strict PDF constraints. |
 | | `lucide-react` | Standard SVG system icons. |
-| **Backend** | `google-genai` | Modern Google Gemini SDK utilizing Gemini 3.5 Flash for parsing & evaluations. |
+| **Backend** | `openai` | OpenAI SDK configured to use Groq's API and Llama 3.3 for lightning-fast parsing & evaluations. |
 | | `prisma-client-py` | Async database client interface with database models. |
 | | `pdfplumber` | Raw PDF text extraction library. |
 | | `pydantic v2` | Native data structure and response schema validations. |
@@ -95,7 +95,7 @@ graph TD
 ├── backend/
 │   ├── prisma/
 │   │   └── schema.prisma    # Prisma schema declaring DB tables
-│   ├── main.py              # FastAPI endpoints, CORS, OCR, and Gemini integrations
+│   ├── main.py              # FastAPI endpoints, CORS, and Groq API integrations
 │   ├── requirements.txt     # Locked backend packages
 │   ├── Dockerfile           # Deploy instruction with libatomic1 dependencies
 │   ├── nixpacks.toml        # Railway Nixpacks build configurations
@@ -219,7 +219,7 @@ Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) Postgr
 4. Create a `.env` file:
    ```env
    DATABASE_URL="postgresql://neondb_owner:***@ep-pooler.c-3.neon.tech/neondb?sslmode=require"
-   GEMINI_API_KEY="your-google-gemini-key"
+   GROQ_API_KEY="your-groq-api-key"
    ```
 5. Build the Prisma database schemas:
    ```bash
@@ -261,7 +261,7 @@ Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) Postgr
 2. In the Service settings, set the **Root Directory** to `/backend`.
 3. Set your service variables:
    - `DATABASE_URL`
-   - `GEMINI_API_KEY`
+   - `GROQ_API_KEY`
    - `ALLOWED_ORIGINS` (e.g., `http://localhost:3000,https://ai-resume-analyzer-yourname.vercel.app`)
 4. To handle compiling the Prisma compiler, your Railway instance uses the local [Dockerfile](file:///f:/Trial%20Projects/ai-resume-analyzer/backend/Dockerfile) which installs `libatomic1` (required by Prisma's Node.js engine wrapper) and triggers `python -m prisma generate` during the container assembly.
 
