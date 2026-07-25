@@ -159,16 +159,70 @@ export default function Home() {
     setIsDownloading(true);
     
     try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt = {
-        margin:       0.5,
-        filename:     `${file?.name ? file.name.split('.')[0] : 'Resume'}_AI_Analysis.pdf`,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#030014' }, 
-        jsPDF:        { unit: 'in' as const, format: 'letter', orientation: 'portrait' as const }
-      };
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const { jsPDF } = await import('jspdf');
 
-      await html2pdf().set(opt).from(element).save();
+      const isDark = document.documentElement.classList.contains('dark');
+      const bgColor = isDark ? '#030014' : '#faf8fd';
+
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: bgColor,
+        onclone: (clonedDoc) => {
+          const container = clonedDoc.getElementById('report-container');
+          if (container) {
+            container.style.boxShadow = 'none';
+            container.style.border = 'none';
+            container.style.borderRadius = '0';
+            
+            // Fix main glass container
+            container.style.background = bgColor;
+            container.classList.remove('premium-glass');
+
+            // Fix nested glass containers
+            const glassElements = container.querySelectorAll('.premium-glass');
+            glassElements.forEach((el) => {
+              (el as HTMLElement).style.background = isDark ? '#0a0524' : '#ffffff';
+              (el as HTMLElement).style.boxShadow = 'none';
+            });
+
+            const secondaryGlassElements = container.querySelectorAll('.premium-glass-secondary');
+            secondaryGlassElements.forEach((el) => {
+              (el as HTMLElement).style.background = isDark ? '#120b38' : '#ffffff';
+              (el as HTMLElement).style.boxShadow = 'none';
+              (el as HTMLElement).style.border = `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`;
+            });
+            
+            // Fix SVG filters (drop-shadow causes white/black box artifacts in html2canvas)
+            const svgs = container.querySelectorAll('svg, circle, path');
+            svgs.forEach((el) => {
+              (el as HTMLElement).style.filter = 'none';
+            });
+            
+            // Hide the download button from PDF
+            const downloadBtn = container.querySelector('[data-html2canvas-ignore="true"]');
+            if (downloadBtn) {
+               (downloadBtn as HTMLElement).style.display = 'none';
+            }
+          }
+        }
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+      const pdf = new jsPDF({
+        unit: 'in',
+        format: 'letter',
+        orientation: 'portrait'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 0.5; // 0.5 inch margin
+      const renderWidth = pdfWidth - (margin * 2);
+      const renderHeight = (canvas.height * renderWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'JPEG', margin, margin, renderWidth, renderHeight);
+      pdf.save(`${file?.name ? file.name.split('.')[0] : 'Resume'}_AI_Analysis.pdf`);
     } catch (error) {
       console.error("Failed to generate PDF", error);
       alert("Something went wrong while generating the PDF. Please try again.");
@@ -411,6 +465,7 @@ export default function Home() {
               {/* Score Box */}
               <div className="p-8 sm:p-10 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-border bg-background/20">
                 <div className="relative mb-6">
+                  {/* Arc SVG — rotated for top-start animation */}
                   <svg className="w-40 h-40 transform -rotate-90">
                     <circle cx="80" cy="80" r="72" fill="none" strokeWidth="6" className="stroke-border" />
                     <circle 
@@ -421,12 +476,35 @@ export default function Home() {
                       strokeDashoffset={452.4 - (452.4 * results.ats_score) / 100}
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center flex-col">
-                    <span className="text-5xl font-black tracking-tight text-foreground">
+                  {/* Text overlay SVG — NOT rotated, sits on top of arc */}
+                  <svg className="absolute inset-0 w-40 h-40" viewBox="0 0 160 160">
+                    <text
+                      x="80" y="72"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      style={{
+                        fill: 'currentColor',
+                        fontSize: '2.5rem',
+                        fontWeight: '900',
+                        letterSpacing: '-0.02em',
+                      }}
+                    >
                       {results.ats_score}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">ATS Index</span>
-                  </div>
+                    </text>
+                    <text
+                      x="80" y="98"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      style={{
+                        fill: '#64748b',
+                        fontSize: '0.52rem',
+                        fontWeight: '700',
+                        letterSpacing: '0.12em',
+                      }}
+                    >
+                      ATS INDEX
+                    </text>
+                  </svg>
                 </div>
                 
                 {/* Secondary Indicators */}
