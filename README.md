@@ -93,18 +93,24 @@ graph TD
 
 ```text
 ├── backend/
+│   ├── app/
+│   │   ├── api/             # API routes and endpoints
+│   │   ├── core/            # Core configuration (DB, CORS, AI client)
+│   │   ├── models/          # Pydantic data schemas
+│   │   └── main.py          # FastAPI application entry point
 │   ├── prisma/
 │   │   └── schema.prisma    # Prisma schema declaring DB tables
-│   ├── main.py              # FastAPI endpoints, CORS, and Groq API integrations
 │   ├── requirements.txt     # Locked backend packages
 │   ├── Dockerfile           # Deploy instruction with libatomic1 dependencies
 │   ├── nixpacks.toml        # Railway Nixpacks build configurations
 │   └── Procfile             # Railway web process command loader
 │
 ├── frontend/
-│   ├── src/app/
-│   │   ├── layout.tsx       # Root layout defining font and Clerk providers
-│   │   └── page.tsx         # Main glassmorphic analysis workspace
+│   ├── src/
+│   │   ├── app/             # Next.js app router pages
+│   │   ├── components/      # Reusable UI and feature components
+│   │   ├── lib/             # API utility functions
+│   │   └── types/           # TypeScript interfaces
 │   ├── package.json         # Frontend package locks
 │   └── .env.local           # Key-value local variables file
 ```
@@ -227,7 +233,7 @@ Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) Postgr
    ```
 6. Spin up the development server:
    ```bash
-   uvicorn main:app --reload --port 8000
+   uvicorn app.main:app --reload --port 8000
    ```
 
 ---
