@@ -1,77 +1,17 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from contextlib import asynccontextmanager
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from prisma import Prisma
-from openai import OpenAI
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from typing import Optional
 import pdfplumber
 import json
 import io
-import os
 import time
 
-# Initialize the Prisma client
-db = Prisma()
+from app.models.schemas import ResumeAnalysis, RewriteRequest, RewriteResponse
+from app.core.config import db, ai_client
 
-# Initialize the Groq client using the OpenAI SDK standard
-# Groq is OpenAI-compatible, so we just point to their base URL
-ai_client = OpenAI(
-    api_key=os.environ.get("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1",
-)
-
-# Define Pydantic models for structured AI analysis response
-class CritiqueItem(BaseModel):
-    category: str = Field(description="The category of the issue (e.g., Formatting, Impact, Keywords, Structure)")
-    issue: str = Field(description="A clear explanation of what is wrong or could be improved.")
-    solution: str = Field(description="An explicit, actionable suggestion or rewrite showing how to fix the issue.")
-
-class ResumeAnalysis(BaseModel):
-    ats_score: int = Field(description="An overall ATS compatibility and formatting score out of 100.")
-    match_percentage: Optional[int] = Field(default=None, description="The match percentage against the provided job description. Null if no JD provided.")
-    gap_analysis: Optional[List[str]] = Field(default=None, description="A list of missing key skills or qualifications based on the job description. Null if no JD provided.")
-    summary: str = Field(description="A brief, professional overview of the resume's core strengths and primary areas for growth.")
-    critiques: List[CritiqueItem] = Field(description="A list of specific, detailed improvement items.")
-
-class RewriteRequest(BaseModel):
-    original_text: str = Field(description="The weak text or issue from the resume.")
-    recommendation: str = Field(description="The AI's original recommendation on how to fix it.")
-
-class RewriteResponse(BaseModel):
-    rewritten_text: str = Field(description="A highly professional, impactful, and quantified rewritten bullet point.")
-    explanation: str = Field(description="A brief 1-sentence explanation of why this new version is much stronger.")
+router = APIRouter()
 
 
-# Handles connecting to the database when the server starts and disconnecting on shutdown
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await db.connect()
-    yield
-    await db.disconnect()
-
-app = FastAPI(title="AI Resume Analyzer API", lifespan=lifespan)
-
-# Add CORS middleware to allow the frontend to communicate with the backend
-from fastapi.middleware.cors import CORSMiddleware
-
-allowed_origins = [
-    origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if origin.strip()
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins, 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-async def root():
-    return {"message": "Backend is running successfully!"}
-
-
-@app.post("/api/resumes/upload")
+@router.post("/api/resumes/upload")
 async def upload_resume(
     file: UploadFile = File(...),
     job_description: Optional[str] = Form(None),
@@ -167,7 +107,7 @@ async def upload_resume(
         raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")
 
 
-@app.post("/api/resumes/rewrite")
+@router.post("/api/resumes/rewrite")
 async def rewrite_bullet(request: RewriteRequest):
     try:
         prompt = f"""
@@ -211,7 +151,7 @@ async def rewrite_bullet(request: RewriteRequest):
         raise HTTPException(status_code=500, detail=f"Error generating rewrite: {str(e)}")
 
 
-@app.get("/api/resumes/history")
+@router.get("/api/resumes/history")
 async def get_user_history(user_id: str):
     """Fetches all past resumes uploaded by a specific user."""
     if not user_id:
