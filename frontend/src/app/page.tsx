@@ -190,7 +190,7 @@ export default function Home() {
               <TrendingUp className="h-4.5 w-4.5 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300">
-              ATS Studio
+              ATS Analyzer
             </span>
           </div>
           <div className="flex items-center space-x-3">
