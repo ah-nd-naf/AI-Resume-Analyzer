@@ -223,7 +223,7 @@ export default function Home() {
         <section className="text-center space-y-5 max-w-3xl mx-auto mt-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold tracking-wider shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-            <span>AI-Powered by Groq · Llama 3.3</span>
+            <span>AI-Powered by Groq LPUs</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight pb-1">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-200 dark:to-slate-400">ATS Resume</span>{" "}

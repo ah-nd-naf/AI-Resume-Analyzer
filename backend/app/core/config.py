@@ -2,7 +2,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from prisma import Prisma
 from openai import OpenAI
+from dotenv import load_dotenv
 import os
+
+# Load environment variables from .env
+load_dotenv()
 
 # Initialize the Prisma client
 db = Prisma()
@@ -21,6 +25,8 @@ async def lifespan(app: FastAPI):
     yield
     await db.disconnect()
 
+default_origins = "http://localhost:3000,http://127.0.0.1:3000"
 allowed_origins = [
-    origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if origin.strip()
+    origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", default_origins).split(",") if origin.strip()
 ]
+
