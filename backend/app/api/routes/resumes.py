@@ -41,6 +41,9 @@ async def upload_resume(
             raise HTTPException(status_code=400, detail="Document appears to be a completely unreadable scanned image.")
         
         # 3. Save the extracted raw text to NeonDB using Prisma
+        if not db.is_connected():
+            await db.connect()
+
         resume_record = await db.resume.create(
             data={
                 "filename": file.filename,
@@ -202,6 +205,9 @@ async def get_user_history(user_id: str):
         raise HTTPException(status_code=400, detail="User ID is required")
         
     try:
+        if not db.is_connected():
+            await db.connect()
+
         history = await db.resume.find_many(
             where={"userId": user_id},
             order={"createdAt": "desc"}
