@@ -7,24 +7,27 @@
 [![Clerk](https://img.shields.io/badge/Clerk_Auth-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.com/)
 [![Prisma](https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma-client-py.readthedocs.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-A highly professional, production-ready, dark-themed **AI Resume Analyzer** that evaluates your resume against ATS (Applicant Tracking Systems) standards and target job descriptions. Powered by the lightning-fast **Groq API** (using Llama 3.3), it features a fast text parser, deep ATS metrics scoring, structured critiques, dynamic inline bullet point rewrites, user history tracking, and a print-formatted PDF export option.
+> **Live Demo**: [https://ai-resume-analyzer-chi-blond.vercel.app](https://ai-resume-analyzer-chi-blond.vercel.app)  
+> **API Backend**: [https://ai-resume-analyzer-u5ko.onrender.com](https://ai-resume-analyzer-u5ko.onrender.com)
+
+A professional, production-ready, dark-themed **AI Resume Analyzer** that evaluates your resume against ATS (Applicant Tracking Systems) standards and target job descriptions. Powered by high-speed **Groq LPUs**, it features instant text extraction, deep ATS metrics scoring, structured diagnostic audits, dynamic inline bullet point rewrites, user history tracking via Clerk, and print-formatted PDF exports.
 
 ---
 
 ## 🏗️ System Architecture & Workflow
 
-Here is how the application handles your documents from upload to detailed AI recommendations:
-
 ```mermaid
 graph TD
     A[Frontend: Drag-and-Drop PDF] --> B(Backend: PDF Parser)
-    B -->|Attempt Standard Text Extraction| C{Text Extracted?}
-    C -->|Yes| E[Save Raw Text to DB]
+    B -->|Attempt Text Extraction| C{Text Extracted?}
+    C -->|Yes| E[Save Raw Text to DB via Prisma]
     C -->|No: Scanned/Image PDF| D[Error: Scanned Image PDF]
-    E --> F[Generate Dynamic Analysis Prompt]
-    F --> G[Call Groq API with Structured Pydantic Schema]
-    G -->|Parse structured response| H[Save Results]
+    E --> F[Generate Evaluation Prompt & Schema]
+    F --> G[Call Groq LPUs API with Pydantic JSON Schema]
+    G -->|Self-healing schema validation| H[Structured ATS Results]
     H --> I[Frontend Dashboard: Glassmorphic UI Render]
     I -->|User triggers| J[Inline Bullet Point AI Rewrite]
     I -->|User triggers| K[Generate Print-Ready PDF Report]
@@ -34,25 +37,22 @@ graph TD
 
 ## ✨ Core Features
 
-1. **Futuristic Dark-Mode Glassmorphism**: Tailored user interface featuring dynamic, animated purple/cyan gradient orbs, frosted glass containers (`backdrop-blur`), sleek typography, and responsive grid layouts.
-2. **Robust Text Extraction**:
-   - Primary: Fast text extraction via `pdfplumber`.
-   - Validation: Detects empty text inputs (commonly scanned image-based PDF files) and gracefully returns a descriptive error guiding the user.
-3. **Structured ATS Intelligence**:
-   - **General Score**: An overall ATS rating out of 100.
-   - **Job Matching**: Dynamic matching metrics (0-100%) against target Job Descriptions.
-   - **Gap Analysis**: Detailed list of missing keywords, frameworks, or skills.
-   - **Executive Summary**: A concise professional overview of strengths and critical expansion opportunities.
+1. **Futuristic Glassmorphic Interface**: Custom dark-mode UI with vibrant gradient orbs, frosted glass containers (`backdrop-blur`), modern typography, and smooth micro-animations.
+2. **Robust Text Extraction & Diagnostics**:
+   - Primary: Fast text parsing via `pdfplumber`.
+   - Validation: Detects unreadable/scanned image PDFs and provides descriptive guidance.
+3. **Comprehensive ATS Intelligence**:
+   - **General ATS Score**: Overall rating out of 100 based on machine readability and structure.
+   - **Sub-Scores**: Granular metrics across Impact, ATS Compatibility, Skills Density, Brevity, and Formatting.
+   - **Job Matching & Gap Analysis**: 0-100% role match percentage with missing technical keywords and soft skills.
+   - **Section-by-Section Audits**: Health diagnostics for Contact, Summary, Experience, Skills, and Education.
 4. **Actionable Critiques & Inline Rewriting**:
-   - Breaks down items by Category (e.g., Formatting, Impact, Keywords).
-   - Allows users to generate high-impact, quantified rewrites inside their browser card using an automated retry-mechanism endpoint.
-   - Features a side-by-side terminal-style comparison panel with equal-height, independently scrollable "Before" and "Optimized" views to handle long text gracefully.
+   - Prioritizes issues by severity (`critical`, `warning`, `suggestion`).
+   - Generates high-impact, quantified rewrites with before-and-after comparisons.
 5. **PDF Export**:
-   - Uses `html2pdf.js` to compile the evaluation dashboard into a letter-format PDF.
-   - Automatically cleans up the PDF report using helper attributes (`data-html2canvas-ignore="true"`) to exclude UI buttons from the generated document.
+   - Client-side document rendering with Letter-format PDF downloads.
 6. **Authentication & History Storage**:
-   - Integrates **Clerk Auth** to partition histories.
-   - Automatically synchronizes recent uploads dynamically in the sliding glass panel.
+   - Integrated with **Clerk Auth** and **Neon PostgreSQL** via **Prisma ORM** for persistent scan history.
 
 ---
 
@@ -61,31 +61,31 @@ graph TD
 ### Languages & Frameworks
 | Technology | Badge | Purpose |
 | :--- | :--- | :--- |
-| **Python 3.11** | `![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)` | Main backend scripting language. |
-| **FastAPI** | `![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi&logoColor=white)` | High-performance, async web framework for API endpoints. |
-| **TypeScript** | `![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)` | Type-safe development for Next.js app components. |
-| **Next.js 16** | `![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)` | App router React architecture. |
-| **Tailwind CSS v4** | `![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwindcss&logoColor=white)` | Modern styling engine with glassmorphic variables. |
+| **Python 3.11** | `![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)` | Async FastAPI backend logic. |
+| **FastAPI** | `![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi&logoColor=white)` | High-performance ASGI REST API with Pydantic v2 schemas. |
+| **TypeScript** | `![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)` | Type-safe React & Next.js architecture. |
+| **Next.js 16** | `![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)` | App Router React frontend framework. |
+| **Tailwind CSS v4** | `![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwindcss&logoColor=white)` | Modern design system and glassmorphism tokens. |
 
 ### Core Libraries & Utilities
 | Folder | Library | Purpose |
 | :--- | :--- | :--- |
 | **Frontend** | `@clerk/nextjs` | Authentication wrapper & user session token holder. |
-| | `html2pdf.js` | Direct client-side DOM-to-PDF export handler (uses `html2canvas` & `jsPDF` internally). |
+| | `html2canvas-pro` & `jspdf` | Client-side DOM-to-PDF export handler. |
 | | `react-dropzone` | Drag-and-drop file inputs handler with strict PDF constraints. |
-| | `lucide-react` | Standard SVG system icons. |
-| **Backend** | `openai` | OpenAI SDK configured to use Groq's API and Llama 3.3 for lightning-fast parsing & evaluations. |
-| | `prisma-client-py` | Async database client interface with database models. |
-| | `pdfplumber` | Raw PDF text extraction library. |
-| | `pydantic v2` | Native data structure and response schema validations. |
+| | `lucide-react` | Modern SVG system icon set. |
+| **Backend** | `openai` SDK | Groq-compatible inference client. |
+| | `prisma-client-py` | Async ORM client interface with Neon PostgreSQL. |
+| | `pdfplumber` | Raw PDF text extraction. |
+| | `pydantic v2` | Self-healing schema validation & data parsing. |
 | | `uvicorn` | High-speed ASGI server implementation. |
 
 ### Infrastructure
 | Service | Badge | Role |
 | :--- | :--- | :--- |
-| **Neon** | `![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)` | Serverless PostgreSQL host storing raw resume data. |
-| **Railway** | `![Railway](https://img.shields.io/badge/Railway-130F26?style=flat-square&logo=railway&logoColor=white)` | Deployed FastAPI backend container. |
-| **Vercel** | `![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)` | Deployed Next.js static and serverless resources. |
+| **Neon** | `![Neon](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)` | Serverless PostgreSQL database. |
+| **Render** | `![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=white)` | Live FastAPI backend web service. |
+| **Vercel** | `![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)` | Live Next.js frontend deployment. |
 
 ---
 
@@ -95,118 +95,34 @@ graph TD
 ├── backend/
 │   ├── app/
 │   │   ├── api/             # API routes and endpoints
-│   │   ├── core/            # Core configuration (DB, CORS, AI client)
-│   │   ├── models/          # Pydantic data schemas
-│   │   └── main.py          # FastAPI application entry point
+│   │   ├── core/            # Core configuration (DB, CORS, AI client, dotenv)
+│   │   ├── models/          # Pydantic data schemas & resilient validators
+│   │   └── main.py          # FastAPI application entry point with Vercel CORS regex
 │   ├── prisma/
-│   │   └── schema.prisma    # Prisma schema declaring DB tables
-│   ├── requirements.txt     # Locked backend packages
-│   ├── Dockerfile           # Deploy instruction with libatomic1 dependencies
-│   ├── nixpacks.toml        # Railway Nixpacks build configurations
-│   └── Procfile             # Railway web process command loader
+│   │   └── schema.prisma    # Prisma database models
+│   ├── requirements.txt     # Python backend dependencies
+│   ├── Dockerfile           # Multi-stage production container definition
+│   └── Procfile             # Process manager start command
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── app/             # Next.js app router pages
-│   │   ├── components/      # Reusable UI and feature components
-│   │   ├── lib/             # API utility functions
-│   │   └── types/           # TypeScript interfaces
-│   ├── package.json         # Frontend package locks
-│   └── .env.local           # Key-value local variables file
+│   │   ├── app/             # Next.js App Router pages
+│   │   ├── components/      # Glassmorphic UI components (UploadCard, Dashboard, etc.)
+│   │   ├── lib/             # API client with automatic URL sanitization
+│   │   └── types/           # TypeScript definitions
+│   ├── package.json         # Frontend dependencies & scripts
+│   └── .env.local           # Local environment variables
 ```
-
----
-
-## ⚡ API Specification
-
-### 1. Root / Health Check
-Check if the API is active.
-- **Endpoint**: `GET /`
-- **Response**:
-  ```json
-  {
-    "message": "Backend is running successfully!"
-  }
-  ```
-
-### 2. Upload and Analyze Resume
-Extracts, saves, and performs structured resume optimization.
-- **Endpoint**: `POST /api/resumes/upload`
-- **Content-Type**: `multipart/form-data`
-- **Request Parameters**:
-  - `file`: `UploadFile` (PDF file, required)
-  - `job_description`: `str` (Optional)
-  - `user_id`: `str` (Optional, for Clerk account grouping)
-- **Response**:
-  ```json
-  {
-    "message": "Resume successfully processed, saved, and analyzed!",
-    "resume_id": "8b5fdfc1-1e9a-4131-a8cf-195fcae12345",
-    "filename": "john_doe_resume.pdf",
-    "analysis": {
-      "ats_score": 85,
-      "match_percentage": 78,
-      "gap_analysis": ["Kubernetes", "TypeScript", "CI/CD Pipeline"],
-      "summary": "The candidate has strong software engineering basics but lacks cloud infrastructure depth...",
-      "critiques": [
-        {
-          "category": "Impact",
-          "issue": "Responsible for managing standard databases.",
-          "solution": "Quantify outcomes: e.g., 'Optimized SQL database indexes, reducing search queries delay by 40%'"
-        }
-      ]
-    }
-  }
-  ```
-
-### 3. Generate Inline Bullet Point Rewrite
-Transforms weak bullet points into high-impact descriptions.
-- **Endpoint**: `POST /api/resumes/rewrite`
-- **Content-Type**: `application/json`
-- **Request Body**:
-  ```json
-  {
-    "original_text": "Responsible for managing standard databases.",
-    "recommendation": "Quantify outcomes: e.g., 'Optimized SQL database indexes, reducing search queries delay by 40%'"
-  }
-  ```
-- **Response**:
-  ```json
-  {
-    "rewritten_text": "Architected and optimized SQL database indexes for core storage systems, reducing search query latency by 40% across 5M weekly transactions.",
-    "explanation": "This version uses strong action verbs, isolates technical impact, and quantifies success to grab recruiters' attention."
-  }
-  ```
-
-### 4. Fetch User Resume History
-Retrieves all historical resumes for a specific authenticated user.
-- **Endpoint**: `GET /api/resumes/history`
-- **Query Parameters**:
-  - `user_id`: `str` (Required)
-- **Response**:
-  ```json
-  {
-    "history": [
-      {
-        "id": "8b5fdfc1-1e9a-4131-a8cf-195fcae12345",
-        "filename": "john_doe_resume.pdf",
-        "content": "Full extracted resume text...",
-        "userId": "user_2l7V...",
-        "createdAt": "2026-07-24T03:28:00.000Z"
-      }
-    ]
-  }
-  ```
 
 ---
 
 ## ⚙️ Setup and Installation
 
 ### Database Configuration
-Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) PostgreSQL project) and ensure it has `sslmode=require`.
+Create a PostgreSQL database on [Neon.tech](https://neon.tech) and copy your connection string (`DATABASE_URL`).
 
-### Backend Setup
-1. Move to the backend folder:
+### Backend Setup (Local)
+1. Navigate to the backend folder:
    ```bash
    cd backend
    ```
@@ -218,32 +134,33 @@ Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) Postgr
    # macOS/Linux:
    source venv/bin/activate
    ```
-3. Install packages:
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-4. Create a `.env` file:
+4. Create a `.env` file in the `backend/` directory:
    ```env
-   DATABASE_URL="postgresql://neondb_owner:***@ep-pooler.c-3.neon.tech/neondb?sslmode=require"
+   DATABASE_URL="postgresql://username:password@ep-pooler.neon.tech/neondb?sslmode=require"
    GROQ_API_KEY="your-groq-api-key"
+   GROQ_MODEL="openai/gpt-oss-120b"
    ```
-5. Build the Prisma database schemas:
+5. Generate Prisma client & push schema:
    ```bash
    prisma db push
    ```
-6. Spin up the development server:
+6. Start the development server:
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
 
 ---
 
-### Frontend Setup
-1. Move to the frontend folder:
+### Frontend Setup (Local)
+1. Navigate to the frontend folder:
    ```bash
    cd ../frontend
    ```
-2. Install package nodes:
+2. Install Node dependencies:
    ```bash
    npm install
    ```
@@ -251,52 +168,35 @@ Get a PostgreSQL connection string (e.g. from a [Neon](https://neon.tech) Postgr
    ```env
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
    CLERK_SECRET_KEY="sk_test_..."
-   NEXT_PUBLIC_API_URL="http://127.0.0.1:8000"
+   NEXT_PUBLIC_API_URL="http://localhost:8000"
    ```
-4. Run locally:
+4. Start the frontend dev server:
    ```bash
    npm run dev
    ```
 
 ---
 
-## 🚀 Production Deployments
+## 🚀 Production Deployment
 
-### Backend Deployment (Railway)
-1. Link your GitHub repository.
-2. In the Service settings, set the **Root Directory** to `/backend`.
-3. Set your service variables:
-   - `DATABASE_URL`
-   - `GROQ_API_KEY`
-   - `ALLOWED_ORIGINS` (e.g., `http://localhost:3000,https://ai-resume-analyzer-yourname.vercel.app`)
-4. To handle compiling the Prisma compiler, your Railway instance uses the local [Dockerfile](file:///f:/Trial%20Projects/ai-resume-analyzer/backend/Dockerfile) which installs `libatomic1` (required by Prisma's Node.js engine wrapper) and triggers `python -m prisma generate` during the container assembly.
+### Backend Deployment (Render)
+1. Create a **New Web Service** on [Render.com](https://render.com) and link this repository.
+2. Configure settings:
+   - **Root Directory**: `backend`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt && python -m prisma generate`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Add Environment Variables:
+   - `DATABASE_URL`: *(Your Neon DB connection string)*
+   - `GROQ_API_KEY`: *(Your Groq API key)*
+   - `GROQ_MODEL`: `openai/gpt-oss-120b`
 
 ### Frontend Deployment (Vercel)
-1. Link your GitHub repository.
-2. Set the **Root Directory** to `frontend`.
-3. Add the following Production Environment Variables:
-   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-   - `CLERK_SECRET_KEY`
-   - `NEXT_PUBLIC_API_URL` (points to your Railway backend URL, e.g., `https://ai-resume-analyzer-yourname.up.railway.app`)
-4. Vercel compiles the optimized bundle automatically.
-5. Update your whitelisted redirect paths inside your Clerk developer dashboard to allow your Vercel URL.
+1. Import the repository into [Vercel](https://vercel.com).
+2. Set **Root Directory** to `frontend`.
+3. Add Environment Variables:
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: *(Your Clerk publishable key)*
+   - `CLERK_SECRET_KEY`: *(Your Clerk secret key)*
+   - `NEXT_PUBLIC_API_URL`: `https://ai-resume-analyzer-u5ko.onrender.com`
+4. Deploy and verify at your Vercel production domain!
 
----
-
-## 🛠️ Troubleshooting
-
-#### 1. Prisma Builder Error: `libatomic.so.1` Missing on Linux
-- **Cause**: Prisma's underlying Node compilation library needs `libatomic.so.1` which is absent in minimal Docker slim bases.
-- **Fix**: Ensure your Docker base installs `libatomic1`. For Nixpacks deployments, include the following in `nixpacks.toml`:
-  ```toml
-  [phases.setup]
-  aptPkgs = ["libatomic1"]
-  ```
-
-#### 2. Vercel TypeScript Check: `Html2PdfOptions` Options Mismatch
-- **Cause**: TypeScript infers primitive types like `string` for inline properties, but `html2pdf.js` expects specific literal string unions.
-- **Fix**: Cast string configurations like `jpeg` and `portrait` explicitly:
-  ```typescript
-  image: { type: 'jpeg' as const }
-  jsPDF: { unit: 'in' as const, orientation: 'portrait' as const }
-  ```
