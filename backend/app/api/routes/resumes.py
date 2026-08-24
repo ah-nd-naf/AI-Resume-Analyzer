@@ -118,7 +118,7 @@ Please return your response strictly as a JSON object adhering to this schema:
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are a master ATS optimization engine and senior executive resume reviewer. Always output strictly valid JSON matching the provided schema."
+                            "content": "You are a master ATS optimization engine and senior executive resume reviewer. Always output strictly valid JSON matching the provided schema. Ensure every element in section_audits and critiques is a complete JSON object."
                         },
                         {
                             "role": "user",
@@ -133,9 +133,9 @@ Please return your response strictly as a JSON object adhering to this schema:
                 
             except Exception as api_error:
                 error_str = str(api_error)
-                if ("503" in error_str or "502" in error_str or "rate_limit" in error_str.lower()) and attempt < max_retries - 1:
-                    print(f"Groq servers busy. Retrying attempt {attempt + 2} of {max_retries} in 3 seconds...")
-                    time.sleep(3)
+                if attempt < max_retries - 1:
+                    print(f"Resume analysis attempt {attempt + 1} failed: {error_str[:100]}. Retrying in 2 seconds...")
+                    time.sleep(2)
                 else:
                     raise api_error
         
@@ -185,9 +185,9 @@ async def rewrite_bullet(request: RewriteRequest):
                 
             except Exception as api_error:
                 error_str = str(api_error)
-                if ("503" in error_str or "502" in error_str or "rate_limit" in error_str.lower()) and attempt < max_retries - 1:
-                    print(f"Groq servers busy. Retrying rewrite attempt {attempt + 2} of {max_retries} in 3 seconds...")
-                    time.sleep(3)
+                if attempt < max_retries - 1:
+                    print(f"Rewrite attempt {attempt + 1} failed: {error_str[:100]}. Retrying in 2 seconds...")
+                    time.sleep(2)
                 else:
                     raise api_error
             
